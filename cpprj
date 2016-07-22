@@ -17,9 +17,9 @@ sed -i "s/\$prj_name/$name/" CMakeLists.txt
 sed -i "s/\$prj_name/$name/" Doxyfile
 
 if [ "$type" = "cli" ]; then 
-    cp /etc/cpprj/cli.cpp src/main.cpp  
+	cp /etc/cpprj/cli.cpp src/main.cpp  
 elif [ "$type" = "lib" ]; then
-    cp /etc/cpprj/lib.cpp src/main.cpp
+	cp /etc/cpprj/lib.cpp src/main.cpp
 fi
 d=$(date +%x\ %X)
 sed -i "s|\$prj_name|$name|g" src/main.cpp
