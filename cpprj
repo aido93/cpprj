@@ -3,6 +3,7 @@ set -e
 
 source $1
 mkdir $dir
+cp $1 $dir/.prj
 mkdir $dir/build
 mkdir $dir/src
 mkdir $dir/include

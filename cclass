@@ -1,6 +1,7 @@
 #!/bin/sh
 set -e
-source .prj
+echo $(pwd)
+source $(pwd)/.prj
 args=("$@")
 class_name=${args[0]}
 args=("${args[@]:1}")
@@ -17,6 +18,8 @@ if [ -e "include" -a -e "src" ]; then
     sed -i "s|\$cls|$class_name|g" include/$class_name.hpp
     sed -i "s|\$cls|$class_name|g" src/$class_name.cpp
     sed -i "s|\$auth|$auth|g" include/$class_name.hpp
+    sed -i "s|\$d|$d|g" include/$class_name.hpp
+    sed -i "s|\$auth|$auth|g" src/$class_name.cpp
     sed -i "s|\$d|$d|g" src/$class_name.cpp
     sed -i "s|SOURCE_FILES^|SOURCE_FILES\n\t\tsrc/$class_name.cpp|" CMakeLists.txt
 else
