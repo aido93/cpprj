@@ -22,10 +22,10 @@ void help()
 
 int main (int argc, char **argv)
 {
-    int c;
-    std::string input_filename;
-    std::string output_filename="-";
-    static struct option long_options[] =
+	int c;
+	std::string input_filename;
+	std::string output_filename="-";
+	static struct option long_options[] =
 	{
 	    {"help",    no_argument,       0, 'h'},
 	    /* These options don’t set a flag.
@@ -40,40 +40,40 @@ int main (int argc, char **argv)
 	int option_index = 0;
 
 	c = getopt_long (argc, argv, "hi:o:",
-		       long_options, &option_index);
+					long_options, &option_index);
 
 	/* Detect the end of the options. */
 	if (c == -1)
-	    break;
+		break;
 
 	switch (c)
 	{
-	    case 'h':
+		case 'h':
 		help();
 		exit(0);
-	    break;
+		break;
 
-	    case 'i':
+		case 'i':
 		input_filename=optarg;
-	    break;
+		break;
 
-	    case 'o':
+		case 'o':
 		output_filename=optarg;
-	    break;
+		break;
 
-	    default:
+		default:
 		abort ();
 	}
     }
 
-    /* Print any remaining command line arguments (not options). */
-    if (optind < argc)
-    {
+	/* Print any remaining command line arguments (not options). */
+	if (optind < argc)
+	{
 	 std::cout<<"non-option ARGV-elements: "<<std::endl;
 	 while (optind < argc)
 	    std::cout<<argv[optind++];
 	 std::cout<<std::endl;
-    }
-    
-    exit (0);
+	}
+	
+	exit (0);
 }
