@@ -8,7 +8,7 @@
 #include <utility>
 
 $cls(int _a):
-a(_a)
+a(_a), $cls_parents()
 {
 	
 }

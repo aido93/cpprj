@@ -5,13 +5,13 @@ source $(pwd)/.prj
 args=("$@")
 class_name=${args[0]}
 args=("${args[@]:1}")
-args[0]=": ${args[0]}";
 if [ ${#args[@]} -ne 0 ]; then
 	separator=", " # e.g. constructing regex, pray it does not contain %s
 	regex="$( printf "${separator}%s" "${args[@]}" )"
 	parents="${regex:${#separator}}" # remove leading separator
 fi
-
+sed -i "s|\$cls_parents|$parents|g" src/$class_name.cpp
+parents=": $parents";
 if [ -e "include" -a -e "src" ]; then
 	d=$(date +%x\ %X)
     cp /etc/cpprj/cls_dummy.hpp include/$class_name.hpp
