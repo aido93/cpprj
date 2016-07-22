@@ -1,0 +1,32 @@
+#!/bin/sh
+set -e
+
+source $1
+mkdir $(dir)
+mkdir $(dir)/build
+mkdir $(dir)/src
+mkdir $(dir)/include
+mkdir $(dir)/docs
+touch $(dir)/docs/dummy
+cd $(dir)
+cp /etc/cpprj/CMakeLists.txt .
+cp /etc/cpprj/Doxyfile .
+cp /etc/cpprj/$(lic) ./LICENSE
+sed -i "s/\$prj_name/$name/" CMakeLists.txt
+sed -i "s/\$prj_name/$name/" Doxyfile
+
+if [ "$type" = "cli" ]; then 
+    cp /etc/cpprj/cli.cpp src/main.cpp	
+else if [ "$type" = "lib" ]
+	cp /etc/cpprj/lib.cpp src/main.cpp
+fi
+sed -i "s/\$prj_name/$name/g" src/main.cpp
+sed -i "s/\$auth/$auth/g"     src/main.cpp
+sed -i "s/\$ver/$ver/g"       src/main.cpp
+sed -i "s/\$desc/$desc/g"     Doxyfile
+sed -i "s/\$prj_name/$name/g" Doxyfile
+sed -i "s/\$ver/$ver/g"       Doxyfile
+sed -i "s/\$pwd/$PWD/g"       Doxyfile
+sed -i "s/\$prj_name/$name/g"            CMakeLists.txt
+sed -i "s/\$cxx_flags/$cxx_flags/g"      CMakeLists.txt
+sed -i "s/\$linker_flags/$linker_flags/" CMakeLists.txt

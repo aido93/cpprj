@@ -1,0 +1,14 @@
+name=
+dir=
+lic=gplv2
+type=cli
+linker_flags="-static-libgcc -static-libstdc++"
+cxx=g++
+cxx_flags="-O2 -Wall -pedantic -march=native -std=c++14"
+inc_dirs="include"
+lib_dirs=
+arch=x86_64
+cross_compile=
+auth=
+ver=1.0
+desc=""
