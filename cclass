@@ -5,9 +5,11 @@ source $(pwd)/.prj
 args=("$@")
 class_name=${args[0]}
 args=("${args[@]:1}")
-function join { local IFS="$1"; shift; echo "$*"; }
+args[0]=": ${args[0]}";
 if [ ${#args[@]} -ne 0 ]; then
-	parents=join ', ' "${args[@]}"
+	separator=", " # e.g. constructing regex, pray it does not contain %s
+	regex="$( printf "${separator}%s" "${args[@]}" )"
+	parents="${regex:${#separator}}" # remove leading separator
 fi
 
 if [ -e "include" -a -e "src" ]; then
