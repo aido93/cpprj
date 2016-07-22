@@ -50,7 +50,7 @@ int main (int argc, char **argv)
 	{
 		case 'h':
 		help();
-		exit(0);
+		exit(EXIT_SUCCESS);
 		break;
 
 		case 'i':
@@ -75,5 +75,5 @@ int main (int argc, char **argv)
 	 std::cout<<std::endl;
 	}
 	
-	exit (0);
+	exit (EXIT_SUCCESS);
 }
