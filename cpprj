@@ -20,13 +20,17 @@ if [ "$type" = "cli" ]; then
 elif [ "$type" = "lib" ]; then
     cp /etc/cpprj/lib.cpp src/main.cpp
 fi
-sed -i "s/\\$prj_name/$name/g" src/main.cpp
-sed -i "s/\\$auth/$auth/g"     src/main.cpp
-sed -i "s/\\$ver/$ver/g"       src/main.cpp
-sed -i "s/\\$desc/$desc/g"     Doxyfile
-sed -i "s/\\$prj_name/$name/g" Doxyfile
-sed -i "s/\\$ver/$ver/g"       Doxyfile
-sed -i "s/\\$pwd/$PWD/g"       Doxyfile
-sed -i "s/\\$prj_name/$name/g"            CMakeLists.txt
-sed -i "s/\\$cxx_flags/$cxx_flags/g"      CMakeLists.txt
-sed -i "s/\\$linker_flags/$linker_flags/" CMakeLists.txt
+d=$(date +%x\ %X)
+sed -i "s|\$prj_name|$name|g" src/main.cpp
+sed -i "s|\$auth|$auth|g"     src/main.cpp
+sed -i "s|\$ver|$ver|g"       src/main.cpp
+sed -i "s|\$desc|$desc|g"     src/main.cpp
+sed -i "s|\$d|$d|g"     src/main.cpp
+sed -i "s|\$desc|$desc|g"     Doxyfile
+sed -i "s|\$prj_name|$name|g" Doxyfile
+sed -i "s|\$ver|$ver|g"       Doxyfile
+sed -i "s|\$pwd|$PWD|g"       Doxyfile
+sed -i "s|\$prj_name|$name|g"             CMakeLists.txt
+sed -i "s|\$cxx_flags|$cxx_flags|g"       CMakeLists.txt
+sed -i "s|\$cxx|$cxx|g"                   CMakeLists.txt
+sed -i "s|\$linker_flags|$linker_flags|g" CMakeLists.txt
