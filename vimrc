@@ -1,28 +1,34 @@
-set exrc
-set secure
+:set exrc
+:set secure
 
-set tabstop=4
-set softtabstop=4
-set shiftwidth=4
+:set tabstop=4
+:set softtabstop=4
+:set shiftwidth=4
+:set autoindent
 
 set colorcolumn=110
 highlight ColorColumn ctermbg=darkgray
 
-set bg=dark
+:set bg=dark
 "let &path.="src/include,/usr/include/AL,"
-set makeprg=cmake\ .\ &&\ make\ ../build\ -j
+:set makeprg=cmake\ .\ &&\ make\ ../build\ -j
 nnoremap <F4> :make!<cr>
 
-function! s:insert_gates()
-  let gatename = substitute(toupper(expand("%:t")), "\\.", "_", "g")
-  execute "normal! i#ifndef " . gatename
-  execute "normal! o#define " . gatename . " "
-  normal! o
-  normal! o
-  normal! o
-  execute "normal! Go#endif /* " . gatename . " */"
-  normal! kk
+function! s:c_header_skel()
+    let gatename = substitute(toupper(expand("%:t")), "\\.", "_", "g")
+    execute "normal i/**"
+    execute "normal o * Description:"
+    execute "normal o * Author: Igor Diakonov"
+    execute "normal o * Date: " . strftime("%d.%m.%y %H:%M:%S")
+    execute "normal o */"
+    execute "normal o#ifndef " . gatename
+    execute "normal o#define " . gatename . "   "
+    execute "normal Go#endif"
+    normal k3o
+    normal k
 endfunction
-au BufNewFile *.{h,hpp} call <SID>insert_gates()
+
+au BufNewFile *.{h,hpp} call <SID>c_header_skel()
+
 filetype on
 filetype plugin on
