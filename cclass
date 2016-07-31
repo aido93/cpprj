@@ -34,27 +34,28 @@ if [ -e "include" -a -e "src" ]; then
 	
 	if [ $dd -eq 1 ]; then
 		sed -i "s|^\t\t\$cls();|\t\t\$cls() = delete;|" include/$class_name.hpp
-		sed -i "/\$cls::\$cls():.*?\n{.*?}/d" src/$class_name.cpp
+		sed -i "/\$cls::\$cls()/,/^}/d" src/$class_name.cpp
 	fi
 	if [ $dc -eq 1 ]; then
 	    sed -i "s|\$cls(const \$cls&);|\$cls(const \$cls\\&) = delete;|" include/$class_name.hpp
 		sed -i "s|\$cls(\$cls&);|\$cls(\$cls\\&) = delete;|" include/$class_name.hpp
 		sed -i "/\$cls operator=(const \$cls\\&);/d" include/$class_name.hpp
 		
-		sed -i "/\$cls::\$cls(const \$cls\\& from)\n{.*?}/d" src/$class_name.cpp
-		sed -i "/\$cls::\$cls(\$cls\\& from)\n{.*?}/d" src/$class_name.cpp
-		sed -i "/\$cls \$cls::operator=(const \$cls\\& from)\n{.*?}.*?}/d" src/$class_name.cpp
+		sed -i "/\$cls::\$cls(const \$cls\\& from)/,/^}/d" src/$class_name.cpp
+		sed -i "/\$cls::\$cls(\$cls\\& from)/,/^}/d" src/$class_name.cpp
+		sed -i "/\$cls \$cls::operator=(const \$cls\\& from)/,/^}/d" src/$class_name.cpp
 	fi
 	if [ $dm -eq 1 ]; then 
 	    sed -i "s|\$cls(\$cls\\&\\&);|\$cls(\$cls\\&\\&) = delete;|" include/$class_name.hpp
 		sed -i "/\$cls\\& operator=(const \$cls\\&\\&);/d" include/$class_name.hpp
 		
-	    sed -i "s|\$cls::\$cls(\$cls\\&\\& from)\n{.*?}||" src/$class_name.cpp
-		sed -i "s|\$cls\\& \$cls::operator=(const \$cls\\&\\&);||" src/$class_name.cpp
+	    sed -i "s|\$cls::\$cls(\$cls\\&\\& from)/,/^}||" src/$class_name.cpp
+		sed -i "s|\$cls\\& \$cls::operator=(const \$cls\\&\\&)/,/^}||" src/$class_name.cpp
 	fi
+	parents1=": $parents";
+	sed -i "s|\$cls_parents|$parents1|" src/$class_name.cpp
 	sed -i "s|\$cls_parents|$parents|g" src/$class_name.cpp
-	parents=": $parents";
-	sed -i "s|\$cls_parents|$parents|g" include/$class_name.hpp
+	sed -i "s|\$cls_parents|$parents1|g" include/$class_name.hpp
 	sed -i "s|\$cls|$class_name|g" include/$class_name.hpp
 	sed -i "s|\$cls|$class_name|g" src/$class_name.cpp
 	sed -i "s|\$auth|$auth|g" include/$class_name.hpp

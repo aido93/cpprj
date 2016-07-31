@@ -7,8 +7,7 @@
 #include "$cls.hpp"
 #include <utility>
 
-$cls::$cls():
-	$cls_parents()
+$cls::$cls() $cls_parents()
 {
 
 }
