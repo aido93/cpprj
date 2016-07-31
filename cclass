@@ -1,18 +1,57 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 source $(pwd)/.prj
 args=("$@")
-class_name=${args[0]}
-args=("${args[@]:1}")
-if [ ${#args[@]} -ne 0 ]; then
+dd=0 #delete default constructor
+dc=0 #delete copy constructor with operator=
+dm=0 #delete move constructor with operator=
+declare -a classes
+for opt in ${args[@]}; do
+    if [[ "$opt" == "-dd" ]]; then
+	    dd=1
+	elif [[ "$opt" == "-dc" ]]; then                                                                           
+        dc=1
+	elif [[ "$opt" == "-dm" ]]; then                                                                           
+	    dm=1
+	else
+		classes[${#classes[*]}]="$opt"
+	fi
+done
+#echo "${classes[@]}"
+class_name=${classes[0]}
+classes=("${classes[@]:1}")
+#echo $class_name
+
+if [ ${#classes[@]} -ne 0 ]; then
 	separator=", " # e.g. constructing regex, pray it does not contain %s
-	regex="$( printf "${separator}%s" "${args[@]}" )"
+	regex="$( printf "${separator}%s" "${classes[@]}" )"
 	parents="${regex:${#separator}}" # remove leading separator
 fi
 if [ -e "include" -a -e "src" ]; then
 	d=$(date +%x\ %X)
 	cp /etc/cpprj/cls_dummy.hpp include/$class_name.hpp
 	cp /etc/cpprj/cls_dummy.cpp src/$class_name.cpp
+	
+	if [ $dd -eq 1 ]; then
+		sed -i "s|^\t\t\$cls();|\t\t\$cls() = delete;|" include/$class_name.hpp
+		sed -i "/\$cls::\$cls():.*?\n{.*?}/d" src/$class_name.cpp
+	fi
+	if [ $dc -eq 1 ]; then
+	    sed -i "s|\$cls(const \$cls&);|\$cls(const \$cls\\&) = delete;|" include/$class_name.hpp
+		sed -i "s|\$cls(\$cls&);|\$cls(\$cls\\&) = delete;|" include/$class_name.hpp
+		sed -i "/\$cls operator=(const \$cls\\&);/d" include/$class_name.hpp
+		
+		sed -i "/\$cls::\$cls(const \$cls\\& from)\n{.*?}/d" src/$class_name.cpp
+		sed -i "/\$cls::\$cls(\$cls\\& from)\n{.*?}/d" src/$class_name.cpp
+		sed -i "/\$cls \$cls::operator=(const \$cls\\& from)\n{.*?}.*?}/d" src/$class_name.cpp
+	fi
+	if [ $dm -eq 1 ]; then 
+	    sed -i "s|\$cls(\$cls\\&\\&);|\$cls(\$cls\\&\\&) = delete;|" include/$class_name.hpp
+		sed -i "/\$cls\\& operator=(const \$cls\\&\\&);/d" include/$class_name.hpp
+		
+	    sed -i "s|\$cls::\$cls(\$cls\\&\\& from)\n{.*?}||" src/$class_name.cpp
+		sed -i "s|\$cls\\& \$cls::operator=(const \$cls\\&\\&);||" src/$class_name.cpp
+	fi
 	sed -i "s|\$cls_parents|$parents|g" src/$class_name.cpp
 	parents=": $parents";
 	sed -i "s|\$cls_parents|$parents|g" include/$class_name.hpp

@@ -7,7 +7,13 @@
 #include "$cls.hpp"
 #include <utility>
 
-$cls(int _a):
+$cls::$cls():
+	$cls_parents()
+{
+
+}
+
+$cls::$cls(int _a):
 a(_a), $cls_parents()
 {
 	
