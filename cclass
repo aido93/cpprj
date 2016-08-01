@@ -17,15 +17,14 @@ for opt in ${args[@]}; do
 		classes[${#classes[*]}]="$opt"
 	fi
 done
-#echo "${classes[@]}"
 class_name=${classes[0]}
 classes=("${classes[@]:1}")
-#echo $class_name
-
+flag=0
 if [ ${#classes[@]} -ne 0 ]; then
 	separator=", " # e.g. constructing regex, pray it does not contain %s
 	regex="$( printf "${separator}%s" "${classes[@]}" )"
 	parents="${regex:${#separator}}" # remove leading separator
+	flag=1
 fi
 if [ -e "include" -a -e "src" ]; then
 	d=$(date +%x\ %X)
@@ -53,10 +52,18 @@ if [ -e "include" -a -e "src" ]; then
 		sed -i "/\$cls\\& \$cls::operator=(const \$cls\\&\\&/,/^}/d" src/$class_name.cpp
 		sed -i '/./,/^$/!d' src/$class_name.cpp
 	fi
-	parents1=": $parents";
-	sed -i "s|\$cls_parents|$parents1|" src/$class_name.cpp
-	sed -i "s|\$cls_parents|$parents|g" src/$class_name.cpp
-	sed -i "s|\$cls_parents|$parents1|g" include/$class_name.hpp
+	for ((a = ${#classes[@]} - 1;a >= 0; a--)); do
+		sed -i "/#pragma once/ a #include \"${classes[a]}.hpp\"" include/$class_name.hpp
+	done
+	parents1=`echo $parents | sed 's|, |(), |g'`
+	if [ $flag -eq 1 ]; then
+		sed -i "s|\$cls_parents|\: $parents1|g" src/$class_name.cpp
+		sed -i "s|\$cls_parents|\: $parents|g" include/$class_name.hpp
+	else
+		sed -i "s|, \$cls_parents()||g" src/$class_name.cpp
+		sed -i "s|\$cls_parents()||g" src/$class_name.cpp                                            
+        sed -i "s|\$cls_parents||g" include/$class_name.hpp
+	fi
 	sed -i "s|\$cls|$class_name|g" include/$class_name.hpp
 	sed -i "s|\$cls|$class_name|g" src/$class_name.cpp
 	sed -i "s|\$auth|$auth|g" include/$class_name.hpp

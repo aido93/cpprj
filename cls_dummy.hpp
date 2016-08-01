@@ -23,6 +23,7 @@ class $cls $cls_parents
 		$cls& operator=(const $cls&&);
 		//Destruct
 		~$cls();
+		//pub functions
 	protected:
 		
 	private:
