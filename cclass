@@ -50,7 +50,8 @@ if [ -e "include" -a -e "src" ]; then
 		sed -i "/\$cls\\& operator=(const \$cls\\&\\&);/d" include/$class_name.hpp
 		
 	    sed -i "/\$cls::\$cls(\$cls\\&\\& from)/,/^}/d" src/$class_name.cpp
-		sed -i "/\$cls\\& \$cls::operator=(const \$cls\\&\\&)/,/^}/d" src/$class_name.cpp
+		#sed -i "/\$cls\\& \$cls::operator=(const \$cls\\&\\&)/,/^}/d" src/$class_name.cpp
+		sed -i "/\$cls\\& \$cls::operator=(const \$cls\\&\\&/,/^}/d" src/$class_name.cpp
 	fi
 	parents1=": $parents";
 	sed -i "s|\$cls_parents|$parents1|" src/$class_name.cpp
