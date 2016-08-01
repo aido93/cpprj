@@ -49,7 +49,7 @@ $1& $1::operator=(const $1&& from)
 		
 	}
 	return *this;
-}
+}'
 ,`')
 $1::~$1()
 {
