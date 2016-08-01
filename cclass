@@ -36,6 +36,10 @@ if [ ${#classes[@]} -ne 0 ]; then
 	flag=1
 fi
 if [ -e "include" -a -e "src" ]; then
+	if [ -e "include/$class_name.hpp" -o -e "src/$class_name.cpp" ]; then
+		echo "File exists. Exit"
+		exit
+	fi
 	d=$(date +%x\ %X)
 	m4 -D cls=$class_name -D d="$d" -D dm=$dm -D dd=$dd -D dc=$dc -D auth="$auth" /etc/cpprj/cls_dummy.hpp.m4 > include/$class_name.hpp
 	m4 -D cls=$class_name -D d="$d" -D dm=$dm -D dd=$dd -D dc=$dc -D auth="$auth" /etc/cpprj/cls_dummy.cpp.m4 > src/$class_name.cpp
