@@ -1,4 +1,4 @@
-define(`do', `/* Description: Implementation of the $cls class
+define(`do', `/* Description: Implementation of the $1 class
  * Todo: 
  * Author: $5
  * Date:   $6

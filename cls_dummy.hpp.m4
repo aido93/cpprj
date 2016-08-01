@@ -32,5 +32,5 @@ define(`constructors',`
 		/*data*/
 		int a;
 };')
-cls_dummy(cls, d, auth,cls_parents)
+cls_dummy(cls,d,auth,cls_parents)
 constructors(cls,dd,dc,dm)
