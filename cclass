@@ -37,8 +37,8 @@ if [ ${#classes[@]} -ne 0 ]; then
 fi
 if [ -e "include" -a -e "src" ]; then
 	d=$(date +%x\ %X)
-	m4 -D cls=asd -D d="$d" -D dm=$dm -D dd=$dd -D dc=$dc -D auth=$auth /etc/cpprj/cls_dummy.hpp.m4 > include/$class_name.hpp
-	m4 -D cls=asd -D d="$d" -D dm=$dm -D dd=$dd -D dc=$dc -D auth=$auth /etc/cpprj/cls_dummy.cpp.m4 > src/$class_name.cpp
+	m4 -D cls=$class_name -D d="$d" -D dm=$dm -D dd=$dd -D dc=$dc -D auth=$auth /etc/cpprj/cls_dummy.hpp.m4 > include/$class_name.hpp
+	m4 -D cls=$class_name -D d="$d" -D dm=$dm -D dd=$dd -D dc=$dc -D auth=$auth /etc/cpprj/cls_dummy.cpp.m4 > src/$class_name.cpp
 	
 	for ((a = ${#classes[@]} - 1;a >= 0; a--)); do
 		sed -i "/#pragma once/ a #include \"${classes[a]}.hpp\"" include/$class_name.hpp
