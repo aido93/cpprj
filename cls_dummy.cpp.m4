@@ -1,18 +1,18 @@
 define(`do', `/* Description: Implementation of the $cls class
  * Todo: 
- * Author: $auth
- * Date:   $d
+ * Author: $5
+ * Date:   $6
  * */
 #include "$1.hpp"
 #include <utility>
 ifelse($2,`0',`
-$1::$1() $cls_parents()
+$1::$1() cls_parents()
 {
 
 }
 ',`')
 $1::$1(int _a):
-a(_a), $cls_parents()
+a(_a), cls_parents()
 {
 	
 }
@@ -55,4 +55,4 @@ $1::~$1()
 {
 	
 }')
-do(cls,dd,dc,dm)
+do(cls,dd,dc,dm,auth,d)
