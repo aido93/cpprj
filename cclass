@@ -58,7 +58,9 @@ if [ -e "include" -a -e "src" ]; then
 		vars=${vars//\\/\\\\}
 		vars=${vars//&/\\&}
 		vars=${vars//|/\\|}
-		sed -i "s|/*data*/|$vars|" include/$class_name.hpp
+		vars=${vars//*/\\*}
+		vars=${vars//;/\\;}
+		sed -i "s|\/\*data\*\/|$vars|" include/$class_name.hpp
 	fi
 else
 	echo "You are not in the project directory! Exit"
