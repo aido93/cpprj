@@ -12,7 +12,7 @@ $1::$1() cls_parents()
 }
 ',`')
 $1::$1(int _a):
-a(_a), cls_parents()
+cls_parents(), a(_a)
 {
 	
 }
