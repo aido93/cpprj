@@ -45,12 +45,12 @@ if [ -e "include" -a -e "src" ]; then
 	done
 	parents1=`echo $parents | sed 's|, |(), |g'`
 	if [ $flag -eq 1 ]; then
-		sed -i "s|\$cls_parents|\: $parents1|g" src/$class_name.cpp
-		sed -i "s|\$cls_parents|\: $parents|g" include/$class_name.hpp
+		sed -i "s|cls_parents|\: $parents1|g" src/$class_name.cpp
+		sed -i "s|cls_parents|\: $parents|g" include/$class_name.hpp
 	else
-		sed -i "s|, \$cls_parents()||g" src/$class_name.cpp
-		sed -i "s|\$cls_parents()||g" src/$class_name.cpp                                            
-        sed -i "s|\$cls_parents||g" include/$class_name.hpp
+		sed -i "s|, cls_parents()||g" src/$class_name.cpp
+		sed -i "s|cls_parents()||g" src/$class_name.cpp                                            
+        sed -i "s|cls_parents||g" include/$class_name.hpp
 	fi
 	sed -i "s|SOURCE_FILES|SOURCE_FILES\n\t\tsrc/$class_name.cpp|" CMakeLists.txt
 	if [ $v -eq 1 ]; then
