@@ -10,6 +10,8 @@ sudo cp cls_dummy* /etc/cpprj/
 sudo cp cli.cpp /etc/cpprj/
 sudo chmod -R 644 /etc/cpprj/*
 sudo cp cpprj /usr/bin
+sudo cp cclass /usr/bin
+sudo cp rmclass /usr/bin
 mkdir ~/projects
 mkdir ~/.vim
 cp vimrc ~/.vimrc
