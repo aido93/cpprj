@@ -13,6 +13,4 @@ sudo cp cpprj /usr/bin
 sudo cp cclass /usr/bin
 sudo cp rmclass /usr/bin
 mkdir ~/projects
-mkdir ~/.vim
-cp vimrc ~/.vimrc
 cp dummy_prj ~/projects/dummy
