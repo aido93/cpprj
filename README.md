@@ -1,2 +1,2 @@
-# vimide
-Simple Vim IDE for C++
+# cpprj
+Simple CLI UML analog for C++
