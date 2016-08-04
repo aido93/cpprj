@@ -1,6 +1,12 @@
 # cpprj
 Simple CLI UML analog for C++
 
+**Install**
+
+git clone https://github.com/aido93/cpprj
+
+cd cpprj && chmod +x cclass cpprj rmclass install.sh && ./install.sh
+
 How to use:
 
 **1) create project**
