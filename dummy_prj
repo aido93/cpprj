@@ -3,7 +3,7 @@ lic=gplv2
 type=cli
 linker_flags="-static-libgcc -static-libstdc++"
 cxx=g++
-cxx_flags="-O2 -Wall -pedantic -march=native -std=c++14"
+cxx_flags="-O2 -Wall -pedantic -march=native -std=c++14 -D_GNU"
 inc_dirs="include"
 lib_dirs=
 arch=x86_64
