@@ -75,6 +75,7 @@ declare -a i_types
 declare -a i_vars
 declare -a o_types
 declare -a o_vars
+
 priv_vars=`echo $priv_vars | sed "s/;/;\n/g"`
 OLD_IFS=${IFS}; 
 IFS=$'\x0a'; 
@@ -86,17 +87,17 @@ IFS=${OLD_IFS}
 priv_vars=`echo "$priv_vars" | sed "s|^|        /**\\\brief */\n        |g" | sed '1,1d'`
 #priv_vars=`echo "$priv_vars" | sed 's/$/\\/g'`
 
-prot_vars=`echo $prot_vars | sed "s/;/;\n       /g"`
+prot_vars=`echo $prot_vars | sed "s/;/;\n/g"`
 OLD_IFS=${IFS}; 
 IFS=$'\x0a'; 
 for i in $prot_vars; do 
-	echo $i | rev | cut -d ' ' -f2- | rev | sed "s/;//"
-	echo $i | rev | cut -d ' ' -f-1 | rev | sed "s/;//"
 	o_types[${#o_types[*]}]=`echo $i | rev | cut -d ' ' -f2- | rev | sed "s/;//"`; 
 	o_vars[${#o_vars[*]}]=`echo $i | rev | cut -d ' ' -f-1 | rev | sed "s/;//"`;
 done; 
 IFS=${OLD_IFS}
-prot_vars=`echo "$prot_vars" | sed "s|^|        /**\\\brief */\n        |g"`
+prot_vars=`echo "$prot_vars" | sed "s|^|        /**\\\brief */\n        |g" | sed '1,1d'`
+#priv_vars=`echo "$priv_vars" | sed 's/$/\\/g'`
+
 class_name=${classes[0]}
 classes=("${classes[@]:1}")
 flag=0
@@ -140,15 +141,19 @@ if [ -e "include" -a -e "src" ]; then
 			for ((a = ${#i_vars[@]} - 1; a>=0; a--)); do
 				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Setter method for variable ${i_vars[a]}\n\t\t\t\\\param [in] x - \n\t\t*\/\n\t\t void set_${i_vars[a]} (const ${i_types[a]} & x);" include/$class_name.hpp
 				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Getter method for variable ${i_vars[a]}\n\t\t\t\\\return Value of variable ${i_vars[a]} \n\t\t*\/\n\t\t ${i_types[a]} get_${i_vars[a]} () const;" include/$class_name.hpp
+				sed -i "/\/\/pub functions/ a void $class_name::set_${i_vars[a]} (const ${i_types[a]} & x)\n{\n\t${i_vars[a]} = x;\n}" src/$class_name.cpp
+                sed -i "/\/\/pub functions/ a ${i_types[a]} $class_name::get_${i_vars[a]} ()\n{\n\treturn ${i_vars[a]}\;\n}" src/$class_name.cpp
 			done
 		elif [ $asi -eq 1 ]; then
 			for ((a = ${#i_vars[@]} - 1; a>=0; a--)); do                                                            
 				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Setter method for variable ${i_vars[a]}\n\t\t\t\\\param [in] x - \n\t\t*/\n\t\t void set_${i_vars[a]} (const ${i_types[a]} & x);" include/$class_name.hpp
-			done	
+				sed -i "/\/\/pub functions/ a void $class_name::set_${i_vars[a]} (const ${i_types[a]} & x)\n{\n\t${i_vars[a]} = x;\n}" src/$class_name.cpp
+			done
 		elif [ $agi -eq 1 ]; then
 			for ((a = ${#i_vars[@]} - 1; a>=0; a--)); do                                                            
 				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Getter method for variable ${i_vars[a]}\n\t\t\t\\\return Value of variable ${i_vars[a]} \n\t\t*/\n\t\t ${i_types[a]} get_${i_vars[a]} () const;" include/$class_name.hpp
-			done		
+				sed -i "/\/\/pub functions/ a ${i_types[a]} $class_name::get_${i_vars[a]} ()\n{\n\treturn ${i_vars[a]}\;\n}" src/$class_name.cpp
+			done
 		fi
 	fi
 	if [ $vo -eq 1 ]; then
@@ -162,14 +167,18 @@ if [ -e "include" -a -e "src" ]; then
 			for ((a = ${#o_vars[@]} - 1; a>=0; a--)); do                                                            
 				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Setter method for variable ${o_vars[a]}\n\t\t\t\\\param [in] x - \n\t\t*/\n\t\t void set_${o_vars[a]} (const ${o_types[a]} & x);" include/$class_name.hpp
 				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Getter method for variable ${o_vars[a]}\n\t\t\t\\\return Value of variable ${o_vars[a]} \n\t\t*/\n\t\t ${o_types[a]} get_${o_vars[a]} () const;" include/$class_name.hpp
+				sed -i "/\/\/pub functions/ a void $class_name::set_${o_vars[a]} (const ${o_types[a]} & x)\n{\n\t${o_vars[a]} = x;\n}" src/$class_name.cpp
+				sed -i "/\/\/pub functions/ a ${o_types[a]} $class_name::get_${o_vars[a]} ()\n{\n\treturn ${o_vars[a]}\;\n}" src/$class_name.cpp
 			done
 		elif [ $asi -eq 1 ]; then
 			for ((a = ${#o_vars[@]} - 1; a>=0; a--)); do                                                            
 				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Setter method for variable ${o_vars[a]}\n\t\t\t\\\param [in] x - \n\t\t*/\n\t\t void set_${o_vars[a]} (const ${o_types[a]} & x);" include/$class_name.hpp
-			done	
+				sed -i "/\/\/pub functions/ a void $class_name::set_${o_vars[a]} (const ${o_types[a]} & x)\n{\n\t${o_vars[a]} = x;\n}" src/$class_name.cpp
+			done
 		elif [ $agi -eq 1 ]; then
 			for ((a = ${#i_vars[@]} - 1; a>=0; a--)); do                                                            
 				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Getter method for variable ${o_vars[a]}\n\t\t\t\\\return Value of variable ${o_vars[a]} \n\t\t*/\n\t\t ${o_types[a]} get_${o_vars[a]} () const;" include/$class_name.hpp
+				sed -i "/\/\/pub functions/ a ${o_types[a]} $class_name::get_${o_vars[a]} ()\n{\n\treturn ${o_vars[a]}\;\n}" src/$class_name.cpp
 			done
 		fi
 	fi
