@@ -1,9 +1,9 @@
-## cpprj
+# cpprj
 Simple CLI UML analog for C++
 
 How to use:
 
-#1) create project
+**1) create project**
 
   cp ~/projects/dummy ~/projects/[project name]
   
@@ -11,7 +11,7 @@ How to use:
   
   cpprj ~/projects/[project name]
   
-#2) create class architecture using script like
+**2) create class architecture using script like**
 
 
 /bin/bash
@@ -41,11 +41,11 @@ cclass [-d options] class_name [parents_name] [-vo [-as] [-ag]] [-vi [-as] [-ag]
 
 -ag - (A)dd (G)etters
 
-3) If you wanna delete some class in the project, use:
+**3) If you wanna delete some class in the project, use:**
 
 rmclass [class_name]
 
-#Note: 
+**Note:** 
 
 list of variables must be created using some rules:
 
