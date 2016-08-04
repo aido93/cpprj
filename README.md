@@ -1,9 +1,9 @@
-# cpprj
+## cpprj
 Simple CLI UML analog for C++
 
 How to use:
 
-1) create project
+#1) create project
 
   cp ~/projects/dummy ~/projects/[project name]
   
@@ -11,9 +11,10 @@ How to use:
   
   cpprj ~/projects/[project name]
   
-2) create class architecture using script like
+#2) create class architecture using script like
 
-#!/bin/bash
+
+/bin/bash
 
 cclass -dm par1 -vo -as -ag "int* index;const char* name;std::string s;" -vi -as -ag "boost::string bs;uint32_t loop;"
 
