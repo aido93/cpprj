@@ -54,5 +54,7 @@ $1& $1::operator=(const $1&& from)
 $1::~$1()
 {
 	
-}')
+}
+//methods
+')
 do(cls,dd,dc,dm,auth,d)
