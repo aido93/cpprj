@@ -34,9 +34,9 @@ for opt in ${args[@]}; do
 	elif [ $vi -eq 1 -a $vo -eq 0 ]; then
 		if [[ "$opt" == "-vo" ]]; then
 			vo=1
-		elif [[ "$opt" == "-as"]]; then
+		elif [[ "$opt" == "-as" ]]; then
 			asi=1
-		elif [[ "$opt" == "-ag"]]; then
+		elif [[ "$opt" == "-ag" ]]; then
 			agi=1
 		else
 			priv_vars="${priv_vars} $opt"
@@ -44,26 +44,26 @@ for opt in ${args[@]}; do
 	elif [ $vi -eq 0 -a $vo -eq 1 ]; then
 		if [[ "$opt" == "-vi" ]]; then
 			vi=1
-		elif [[ "$opt" == "-as"]]; then
+		elif [[ "$opt" == "-as" ]]; then
 			aso=1
-		elif [[ "$opt" == "-ag"]]; then
+		elif [[ "$opt" == "-ag" ]]; then
 			ago=1
 		else
 			prot_vars="${prot_vars} $opt"
 		fi
 	elif [ $vi -eq 1 -a $vo -eq 1 ]; then
-		if [[ -z "$prot_vars"]]
-			if [[ "$opt" == "-as"]]; then
+		if [[ -z "$prot_vars" ]]; then
+			if [[ "$opt" == "-as" ]]; then
 				aso=1
-			elif [[ "$opt" == "-ag"]]; then
+			elif [[ "$opt" == "-ag" ]]; then
 				ago=1
 			else
 				prot_vars="${prot_vars} $opt"
 			fi
-		elif [[ -z "$priv_vars" ]]
-			if [[ "$opt" == "-as"]]; then
+		elif [[ -z "$priv_vars" ]]; then 
+			if [[ "$opt" == "-as" ]]; then
 				asi=1
-			elif [[ "$opt" == "-ag"]]; then
+			elif [[ "$opt" == "-ag" ]]; then
 				agi=1
 			else	
 				priv_vars="${priv_vars} $opt"
@@ -83,7 +83,9 @@ for i in $priv_vars; do
 	i_vars[${#i_vars[*]}]=`echo $i | rev | cut -d ' ' -f-1 | rev | sed "s/;//"`;
 done; 
 IFS=${OLD_IFS}
-priv_vars=`echo "$priv_vars" | sed "s|^|\n       /**\\\brief */\n      |g"`
+priv_vars=`echo "$priv_vars" | sed "s|^|\\\\\n       /**\\\brief */\n      |g" | sed '1,1d'`
+#priv_vars=`echo "$priv_vars" | sed 's/$/\\/g'`
+
 prot_vars=`echo $prot_vars | sed "s/;/;\n       /g"`
 OLD_IFS=${IFS}; 
 IFS=$'\x0a'; 
@@ -92,7 +94,7 @@ for i in $prot_vars; do
 	o_vars[${#o_vars[*]}]=`echo $i | rev | cut -d ' ' -f-1 | rev | sed "s/;//"`;
 done; 
 IFS=${OLD_IFS}
-prot_vars=`echo "$prot_vars" | sed "s|^|\n       /**\\\brief */\n      |g"`
+prot_vars=`echo "$prot_vars" | sed "s|^|\\\\\n       /**\\\brief */\n      |g"`
 class_name=${classes[0]}
 classes=("${classes[@]:1}")
 flag=0
@@ -130,11 +132,17 @@ if [ -e "include" -a -e "src" ]; then
 		priv_vars=${priv_vars//&/\\&}
 		priv_vars=${priv_vars//|/\\|}
 		priv_vars=${priv_vars//;/\\;\\}
-		sed -i "s|\/\*private data\*\/|$priv_vars|" include/$class_name.hpp
+		priv_vars=${priv_vars//\//\\\/\\}
+		echo "$priv_vars"
+		sed -i "s|\/\*priv_data\*\/|$priv_vars |" include/$class_name.hpp
+		echo jjj
 		if [ $asi -eq 1 -a $agi -eq 1]; then 
-			for ((a = ${#i_vars[@]} - 1; a>=0; a--)); do                                                            
-				sed -i "/\/\/pub functions/ a /**\\\brief Setter method for ${i_vars[a]} variable\n\t\t\\\param [in] x - \n\t\t*/\n\t\t void set_${i_vars[a]} (const ${i_types[a]} & x);" include/$class_name.hpp
-				sed -i "/\/\/pub functions/ a /**\\\brief Getter method for ${i_vars[a]} variable\n\t\t\\\return Value of variable ${i_vars[a]} \n\t\t*/\n\t\t ${i_types[a]} get_${i_vars[a]} () const;" include/$class_name.hpp
+			for ((a = ${#i_vars[@]} - 1; a>=0; a--)); do
+				echo 123
+				sed -i "/\/\/pub functions/ a \/**\\\brief Setter method for ${i_vars[a]} variable\n\t\t\\\param [in] x - \n\t\t*\/\n\t\t void set_${i_vars[a]} (const ${i_types[a]} & x);" include/$class_name.hpp
+				echo 345
+				sed -i "/\/\/pub functions/ a \/**\\\brief Getter method for ${i_vars[a]} variable\n\t\t\\\return Value of variable ${i_vars[a]} \n\t\t*\/\n\t\t ${i_types[a]} get_${i_vars[a]} () const;" include/$class_name.hpp
+				echo 456
 			done
 		elif [ $asi -eq 1 ]; then
 			for ((a = ${#i_vars[@]} - 1; a>=0; a--)); do                                                            
