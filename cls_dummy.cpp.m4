@@ -11,7 +11,7 @@ $1::$1() cls_parents()
 
 }
 ',`')
-$1::$1(int _a):
+$1::$1(uint32_t _a):
 cls_parents(), a(_a)
 {
 	
