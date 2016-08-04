@@ -133,16 +133,11 @@ if [ -e "include" -a -e "src" ]; then
 		priv_vars=${priv_vars//|/\\|}
 		priv_vars=${priv_vars//;/\\;\\}
 		priv_vars=${priv_vars//\//\\\/\\}
-		echo "$priv_vars"
 		sed -i "s|\/\*priv_data\*\/|$priv_vars |" include/$class_name.hpp
-		echo jjj
-		if [ $asi -eq 1 -a $agi -eq 1]; then 
+		if [ $asi -eq 1 -a $agi -eq 1 ]; then 
 			for ((a = ${#i_vars[@]} - 1; a>=0; a--)); do
-				echo 123
 				sed -i "/\/\/pub functions/ a \/**\\\brief Setter method for ${i_vars[a]} variable\n\t\t\\\param [in] x - \n\t\t*\/\n\t\t void set_${i_vars[a]} (const ${i_types[a]} & x);" include/$class_name.hpp
-				echo 345
 				sed -i "/\/\/pub functions/ a \/**\\\brief Getter method for ${i_vars[a]} variable\n\t\t\\\return Value of variable ${i_vars[a]} \n\t\t*\/\n\t\t ${i_types[a]} get_${i_vars[a]} () const;" include/$class_name.hpp
-				echo 456
 			done
 		elif [ $asi -eq 1 ]; then
 			for ((a = ${#i_vars[@]} - 1; a>=0; a--)); do                                                            
@@ -159,8 +154,9 @@ if [ -e "include" -a -e "src" ]; then
 		prot_vars=${prot_vars//&/\\&}
 		prot_vars=${prot_vars//|/\\|}
 		prot_vars=${prot_vars//;/\\;\\}
-		sed -i "s|\/\*protected data\*\/|$prot_vars|" include/$class_name.hpp
-		if [ $aso -eq 1 -a $ago -eq 1]; then 
+		prot_vars=${prot_vars//\//\\\/\\}
+		sed -i "s|\/\*protected data\*\/|$prot_vars |" include/$class_name.hpp
+		if [ $aso -eq 1 -a $ago -eq 1 ]; then 
 			for ((a = ${#o_vars[@]} - 1; a>=0; a--)); do                                                            
 				sed -i "/\/\/pub functions/ a /**\\\brief Setter method for ${o_vars[a]} variable\n\t\t\\\param [in] x - \n\t\t*/\n\t\t void set_${o_vars[a]} (const ${o_types[a]} & x);" include/$class_name.hpp
 				sed -i "/\/\/pub functions/ a /**\\\brief Getter method for ${o_vars[a]} variable\n\t\t\\\return Value of variable ${o_vars[a]} \n\t\t*/\n\t\t ${o_types[a]} get_${o_vars[a]} () const;" include/$class_name.hpp
