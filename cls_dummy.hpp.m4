@@ -5,6 +5,7 @@ define(`cls_dummy',`/**
  * Date:   $3
  * */
 #pragma once
+#include <stdint.h>
 /**
  * \brief
  * \details
@@ -15,7 +16,7 @@ class $1 $4
 
 define(`constructors',`
 		ifelse($2,`0',`$1()';,`$1() = delete;')
-		explicit $1(int _a);
+		explicit $1(uint32_t _a);
 		//Copy
 		ifelse($3,`0',`$1 operator=(const $1&);',`')
 		ifelse($3,`0',`$1(const $1&);',`$1(const $1&) = delete;')
@@ -30,7 +31,7 @@ define(`constructors',`
 /*protected data*/
 	private:
 /*private data*/
-		int a;
+		uint32_t a;
 };')
 cls_dummy(cls,d,auth,cls_parents)
 constructors(cls,dd,dc,dm)
