@@ -27,9 +27,9 @@ define(`constructors',`
 		~$1();
 		//pub functions
 	protected:
-		/*protected data*/
+/*protected data*/
 	private:
-		/*private data*/
+/*private data*/
 		int a;
 };')
 cls_dummy(cls,d,auth,cls_parents)
