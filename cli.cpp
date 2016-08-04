@@ -2,8 +2,9 @@
 #include <iostream>
 #include <string>
 #include <stdlib.h>
+#ifdef _GNU
 #include <getopt.h>
-
+#endif
 /**
  * \brief help function
  * \details print help on the screen
@@ -22,6 +23,7 @@ void help()
 
 int main (int argc, char **argv)
 {
+	#ifdef _GNU
 	int c;
 	std::string input_filename;
 	std::string output_filename="-";
@@ -74,6 +76,7 @@ int main (int argc, char **argv)
 	    std::cout<<argv[optind++];
 	 std::cout<<std::endl;
 	}
+	#endif
 	
 	exit (EXIT_SUCCESS);
 }
