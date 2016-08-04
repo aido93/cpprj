@@ -1,6 +1,20 @@
 # cpprj
 Simple CLI UML analog for C++
 
+**Dependencies**
+
+bash
+
+sed
+
+m4
+
+cmake
+
+doxygen
+
+dot (for diagrams in Doxygen)
+
 **Install**
 
 git clone https://github.com/aido93/cpprj
