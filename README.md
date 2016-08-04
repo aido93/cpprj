@@ -41,6 +41,10 @@ cclass [-d options] class_name [parents_name] [-vo [-as] [-ag]] [-vi [-as] [-ag]
 
 -ag - (A)dd (G)etters
 
+3) If you wanna delete some class in the project, use:
+
+rmclass [class_name]
+
 #Note: 
 
 list of variables must be created using some rules:
