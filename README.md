@@ -40,3 +40,7 @@ cclass [-d options] class_name [parents_name] [-vo [-as] [-ag]] [-vi [-as] [-ag]
 -as - (A)dd (S)etters
 
 -ag - (A)dd (G)etters
+
+Note: list of variables must be created using some rules:
+1) references and pointers: only 'int* x' or 'char& y' type. Not 'int *x' or 'char & y'
+2) Semicolon must have no spaces before and after itself.
