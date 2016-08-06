@@ -25,8 +25,10 @@ for opt in ${args[@]}; do
 done
 if [ -z "$ret_type" ]; then
 	ret_type="void"
-elif [ "$ret_type" == "static" ]; then
+elif [ "$ret_type" == " static" ]; then
 	ret_type="static void"
+elif [ "$ret_type" == " virtual" ]; then
+	ret_type="virtual void"
 fi
 if [ -e "include" -a -e "src" ]; then
     if [ -e "include/$class_name.hpp" ]; then
@@ -48,19 +50,17 @@ if [ -e "include" -a -e "src" ]; then
 	for ((a = commas_count; a>=0; a--)); do
 		method="$method\\\param [in] - \n        * ";
 	done
-	if [ "$ret_type" != "void" -a "$ret_type" != "static void" ]; then
+	if [ "$ret_type" != "void" -a "$ret_type" != "static void" -a "$ret_type" != "virtual void" ]; then
 		method="$method\\\return \n        "
 	fi
 	method="$method*/\n        $ret_type $method_name ($method_args);"
 	if [ $flag1 -eq 0 ]; then
 		method_src="$ret_type $class_name::$method_name ($method_args)\n{\n "
-		ret_type=`echo $ret_type | sed -n "s/static //"`
-		ret_type=`echo $ret_type | sed -n "s/mutable //"`
-		if [ "$ret_type" != "void" ]; then
+		if [ "$ret_type" != "void" -a "$ret_type" != "static void" -a "$ret_type" != "virtual void" ]; then
 			method_src="$method_src    $ret_type result;\n"
 		fi
 		method_src="$method_src    "
-		if [ "$ret_type" != "void" -a "$ret_type" != "static void" ]; then
+		if [ "$ret_type" != "void" -a "$ret_type" != "static void" -a "$ret_type" != "virtual void" ]; then
 			method_src="$method_src\n    return result;"
 		fi
 		method_src="$method_src\n}\n"
@@ -75,13 +75,11 @@ if [ -e "include" -a -e "src" ]; then
 			temp2=" class ${templates2}" 
 		fi
 		method_src="template<$temp2>\n$ret_type $class_name<$temp1>::$method_name ($method_args)\n{\n"
-		ret_type=`echo $ret_type | sed -n "s/static //"`
-		ret_type=`echo $ret_type | sed -n "s/mutable //"`
-		if [ "$ret_type" != "void" ]; then
+		if [ "$ret_type" != "void" -a "$ret_type" != "static void" -a "$ret_type" != "virtual void" ]; then
 			method_src="$method_src    $ret_type result;\n"
 		fi
 		method_src="$method_src\t"
-		if [ "$ret_type" != "void" ]; then
+		if [ "$ret_type" != "void" -a "$ret_type" != "static void" -a "$ret_type" != "virtual void" ]; then
 			method_src="$method_src\n    return result;"
 		fi
 	fi
@@ -95,7 +93,7 @@ if [ -e "include" -a -e "src" ]; then
 		echo "Wrong access type. Must be -i for pr(I)vate or -o for pr(O)tected or -u for p(U)blic. Exit"
 		exit
 	fi
-	sed -i "$ a \\n$method_src" $src
+	sed -i "$ a \\\n$method_src" $src
 else
 	echo "You are not in the project directory. Exit"
 fi
