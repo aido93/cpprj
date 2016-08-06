@@ -53,7 +53,17 @@ if [ -e "include" -a -e "src" ]; then
 	method=${method//\\/\\\\}
 	method=${method//\//\\\/\\}
 	if [ $flag1 -eq 0 ]; then
-		method_src="$ret_type $class_name::$method_name ($method_args)\n{\n\t\n}\n"
+		method_src="$ret_type $class_name::$method_name ($method_args)\n{\n"
+		ret_type=`echo $ret_type | sed -n "s/static //"`
+		ret_type=`echo $ret_type | sed -n "s/mutable //"`
+		if ["$ret_type" != "void" ]; then
+			method_src="$method_src\t$ret_type result;\n"
+		fi
+		method_src="$method_src\t"
+		if ["$ret_type" != "void" ]; then
+			method_src="$method_src\nreturn result;"
+		fi
+		method_src="$method_src\n}\n"
 	else
 		if [ ${#temps[@]} -ne 0 ]; then 
 		    separator1=", " # e.g. constructing regex, pray it does not contain %s                            
@@ -64,7 +74,16 @@ if [ -e "include" -a -e "src" ]; then
 			temp2="${regex:${#separator2}}" # remove leading separator 
 			temp2=" class ${templates2}" 
 		fi
-		method_src="template<$temp2>\n$ret_type $class_name<$temp1>::$method_name ($method_args)\n{\n\t\n}\n"
+		method_src="template<$temp2>\n$ret_type $class_name<$temp1>::$method_name ($method_args)\n{\n"
+		ret_type=`echo $ret_type | sed -n "s/static //"`
+		ret_type=`echo $ret_type | sed -n "s/mutable //"`
+		if ["$ret_type" != "void" ]; then
+			method_src="$method_src\t$ret_type result;\n"
+		fi
+		method_src="$method_src\t"
+		if ["$ret_type" != "void" ]; then
+			method_src="$method_src\nreturn result;"
+		fi
 	fi
 	if [ "$access" == "-u" ]; then
 		sed -i "/protected/i$method" $inc
