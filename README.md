@@ -79,6 +79,16 @@ if return type is empty then uses 'void' type
 
 template types - templates of the class
 
+Examples:
+
+ccam par2 -i method4 -a const char* s, int k -t U V G
+
+ccam par2 -i method4 static long int* -a const char* s, int k -t U V G
+
+ccam par1 -i method2 virtual int -a const char* s, int k
+
+ccam par2 -o method4 -a -t U V G
+
 **Note:** 
 
 list of variables must be created using some rules:
