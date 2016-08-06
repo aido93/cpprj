@@ -67,6 +67,18 @@ cclass class_name [parents_name] [[-t] templates_names] [-d options] [-vo [-as] 
 
 rmclass [class_name]
 
+**4) If you wanna add some method to the class, use:**
+
+ccam [class_name] -[iou] name return type -a arguments [-t template types]
+
+-i - pr(I)vate
+-o - pr(O)tected
+-u - p(U)blic
+
+if return type is empty then uses 'void' type
+
+template types - templates of the class
+
 **Note:** 
 
 list of variables must be created using some rules:
