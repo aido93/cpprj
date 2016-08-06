@@ -99,6 +99,8 @@ ccam par1 -i method2 virtual int -a const char* s, int k
 
 ccam par2 -o method4 -a -t U V G
 
+ccam par1 -i p method7 virtual int -a const char* s, int k
+
 **Note:** 
 
 list of variables must be created using some rules:
