@@ -128,6 +128,7 @@ if [ -e "include" -a -e "src" ]; then
 		exit
 	fi
 	sed -i "$ a \\\n$method_src" $src
+	sed -i '/./,/^$/!d' $src
 else
 	echo "You are not in the project directory. Exit"
 fi
