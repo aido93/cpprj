@@ -1,13 +1,27 @@
 #!/bin/bash
 set -e
 # class method creator
-# format: ccam [class_name] -[iou] name return type -a arguments [-t template types]
+# format: ccam [class_name] -[iou] -[pf] name return type -a arguments [-t template types]
 # if return type does not exist then script uses 'void'
+# p - pure virtual
+# f - finished
 args=("$@")
 class_name=${args[0]}
 access=${args[1]}
-method_name=${args[2]}
-args=("${args[@]:3}")
+pure_virt=0
+fin=0
+if [ "${args[2]}" == "-f" ]; then
+	fin=1
+	method_name=${args[3]}
+	args=("${args[@]:4}")
+elif [ "${args[2]}" == "-p" ]; then
+	pure_virt=1
+	method_name=${args[3]}
+	args=("${args[@]:4}")
+else
+	method_name=${args[2]}
+	args=("${args[@]:3}")
+fi
 flag0=0
 flag1=0
 for opt in ${args[@]}; do
@@ -57,8 +71,18 @@ if [ -e "include" -a -e "src" ]; then
 	if [ "$ret_type" != "void" -a "$ret_type" != "static void" -a "$ret_type" != "virtual void" ]; then
 		method="$method\\\return \n        "
 	fi
-	method="$method */\n        $ret_type $method_name ($method_args);"
-	if [ $flag1 -eq 0 ]; then
+	method="$method */\n        $ret_type $method_name ($method_args)"
+	is_virtual=`echo "$ret_type" | sed -n "/virtual/p"`
+	if [ -n "$is_virtual" ]; then
+		if [ $fin -eq 1 ]; then
+			method="$method final;"
+		elif [ $pure_virt -eq 1 ]; then
+			method="$method = 0;"
+		fi
+	else
+		echo "Error: not virtual function cannot be final or pure."
+	fi
+	if [ $flag1 -eq 0 -a $pure_virt -eq 0 ]; then
 		method_src="$ret_type $class_name::$method_name ($method_args)\n{\n "
 		ret_type=`echo "$ret_type" | sed "s/virtual //"`
 		ret_type=`echo "$ret_type" | sed "s/static //"`
@@ -70,7 +94,7 @@ if [ -e "include" -a -e "src" ]; then
 			method_src="$method_src\n    return result;"
 		fi
 		method_src="$method_src\n}\n"
-	else
+	elif [ $pure_virt -eq 0 ]; then
 		if [ ${#temps[@]} -ne 0 ]; then 
 		    separator1=", " # e.g. constructing regex, pray it does not contain %s                            
 			regex="$( printf "${separator1}%s" "${temps[@]}" )" 
