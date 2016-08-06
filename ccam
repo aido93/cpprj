@@ -86,8 +86,9 @@ if [ -e "include" -a -e "src" ]; then
 		fi
 		method_src="$method_src\t"
 		if [ "$ret_type" != "void" ]; then
-			method_src="$method_src\n    return result;\n}"
+			method_src="$method_src\n    return result;"
 		fi
+		method_src="$method_src\n}\n"
 	fi
 	if [ "$access" == "-u" ]; then
 		sed -i "/protected/i$method" $inc
