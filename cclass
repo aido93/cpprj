@@ -119,12 +119,16 @@ prot_vars=`echo "$prot_vars" | sed "s|^|        /**\\\brief */\n        |g"`
 class_name=${classes[0]}
 classes=("${classes[@]:1}")
 flag=0
+declare -a class_mask
+class_counter=0
 if [ ${#classes[@]} -ne 0 ]; then
 	#separator=", " # e.g. constructing regex, pray it does not contain %s
 	#regex="$( printf "${separator}%s" "${classes[@]}" )"
 	#parents="${regex:${#separator}}" # remove leading separator
 	inh_type=0 #public - default
 	for ((a=0; a <= ${#classes[@]} - 1; a++)); do
+		class_counter=`expr $class_counter + 1`
+		class_mask[$class_counter-1]=0
 		if [ ${classes[a]} == "-u" ];then #public
 			inh_type=0
 		elif [ ${classes[a]} == "-o" ];then #protected
@@ -134,6 +138,7 @@ if [ ${#classes[@]} -ne 0 ]; then
 		elif [ ${classes[a]} == "-vu" ];then #virtual public
 			inh_type=3
 		else
+			class_mask[$class_counter-1]=1
 			if [ $inh_type -eq 0 ]; then
 				parents="$parents public ${classes[a]},"
 				inh_type=0
@@ -178,7 +183,9 @@ if [ -e "include" -a -e "src" ]; then
 		
 	fi
 	for ((a = ${#classes[@]} - 1;a >= 0; a--)); do
-		sed -i "/#pragma once/ a #include \"${classes[a]}.hpp\"" include/$class_name.hpp
+		if [ ${class_mask[a]} -eq 1 ]; then 
+			sed -i "/#pragma once/ a #include \"${classes[a]}.hpp\"" include/$class_name.hpp
+		fi
 	done
 	parents1=`echo $parents | sed 's|, |(), |g'`
 	if [ $flag -eq 1 ]; then
