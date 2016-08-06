@@ -95,7 +95,6 @@ declare -a i_types
 declare -a i_vars
 declare -a o_types
 declare -a o_vars
-
 priv_vars=`echo $priv_vars | sed "s/;/;\n/g"`
 OLD_IFS=${IFS}; 
 IFS=$'\x0a'; 
@@ -144,7 +143,6 @@ if [ -e "include" -a -e "src" ]; then
 			regex="$( printf "${separator2}%s" "${temps[@]}" )"
 			templates2="${regex:${#separator2}}" # remove leading separator
 			templates2=" class ${templates2}"
-			echo "${templates2}"
 		fi 
 		m4 -D cls=$class_name -D d="$d" -D dm=$dm -D dd=$dd -D dc=$dc -D auth="$auth" -D temp2="\`\`<$templates1>''" -D temp1="\`\`template<$templates2 >''" /etc/cpprj/cls_dummy.cpp.m4 > include/${class_name}_impl.hpp
 		sed -i "7d" include/${class_name}_impl.hpp
@@ -185,6 +183,16 @@ if [ -e "include" -a -e "src" ]; then
 		priv_vars=${priv_vars//;/\\;\\}
 		priv_vars=${priv_vars//\//\\\/\\}
 		sed -i "s|\/\*private data\*\/|$priv_vars |" include/$class_name.hpp
+		for ((a = ${#i_vars[@]} - 1; a>=0; a--)); do
+		tmp_str=`echo "${i_types[a]}" | sed -n "/static/p"`
+			if [ -n "$tmp_str" ]; then
+				if [ $template_flag -eq 0 ]; then
+					sed -i "/#include <utility>/ a ${i_types[a]} $class_name::${i_vars[a]};\n" src/$class_name.cpp
+				else
+					sed -i "/#include <utility>/ a template<$templates2>\n${i_types[a]} $class_name<$templates1>::${i_vars[a]};\n" include/${class_name}_impl.hpp
+				fi
+			fi
+		done
 		if [ $asi -eq 1 -a $agi -eq 1 ]; then 
 			for ((a = ${#i_vars[@]} - 1; a>=0; a--)); do
 				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Setter method for variable ${i_vars[a]}\n\t\t\t\\\param [in] x - \n\t\t*\/\n\t\t void set_${i_vars[a]} (const ${i_types[a]} & x);" include/$class_name.hpp
@@ -224,6 +232,16 @@ if [ -e "include" -a -e "src" ]; then
 		prot_vars=${prot_vars//;/\\;\\}
 		prot_vars=${prot_vars//\//\\\/\\}
 		sed -i "s|\/\*protected data\*\/|$prot_vars |" include/$class_name.hpp
+		for ((a = ${#o_vars[@]}-1; a>=0; a--)); do
+			tmp_str=`echo "${o_types[a]}" | sed -n "/static/p"`
+			if [ -n "$tmp_str" ]; then
+				if [ $template_flag -eq 0 ]; then
+					sed -i "/#include <utility>/ a ${o_types[a]} $class_name::${o_vars[a]};\n" src/$class_name.cpp
+				else
+					sed -i "/#include <utility>/ a template<$templates2>\n${o_types[a]} $class_name<$templates1>::${o_vars[a]};\n" include/${class_name}_impl.hpp
+				fi
+			fi
+		done
 		if [ $aso -eq 1 -a $ago -eq 1 ]; then 
 			for ((a = ${#o_vars[@]} - 1; a>=0; a--)); do                                                            
 				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Setter method for variable ${o_vars[a]}\n\t\t\t\\\param [in] x - \n\t\t*/\n\t\t void set_${o_vars[a]} (const ${o_types[a]} & x);" include/$class_name.hpp
