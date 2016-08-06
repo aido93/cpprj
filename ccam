@@ -25,6 +25,8 @@ for opt in ${args[@]}; do
 done
 if [ -z "$ret_type" ]; then
 	ret_type="void"
+elif [ "$ret_type" == "static" ]; then
+	ret_type="static void"
 fi
 if [ -e "include" -a -e "src" ]; then
     if [ -e "include/$class_name.hpp"]; then
@@ -46,7 +48,7 @@ if [ -e "include" -a -e "src" ]; then
 	for ((a = commas_count; a>=0; a--)); do
 		method="$method\\\param [in] - \n        * ";
 	done
-	if [ "ret_type" != "void" ]; then
+	if [ "$ret_type" != "void" -a "$ret_type" != "static void" ]; then
 		method="$method\\\return \n        */"
 	fi
 	method="$method\n        $ret_type $method_name ($method_args);"
@@ -60,7 +62,7 @@ if [ -e "include" -a -e "src" ]; then
 			method_src="$method_src\t$ret_type result;\n"
 		fi
 		method_src="$method_src\t"
-		if ["$ret_type" != "void" ]; then
+		if ["$ret_type" != "void" -a "$ret_type" != "static void" ]; then
 			method_src="$method_src\nreturn result;"
 		fi
 		method_src="$method_src\n}\n"
