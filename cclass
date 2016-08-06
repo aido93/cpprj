@@ -150,7 +150,8 @@ if [ -e "include" -a -e "src" ]; then
 		fi 
 		echo "#include \"${class_name}_impl.hpp\"" >> include/$class_name.hpp
 		sed -i "s/class/template<$templates2> class/" include/$class_name.hpp
-		sed -i "s/$class_name/template<$templates2>\n$class_name<$templates1>/g" include/${class_name}_impl.hpp
+		cat include/${class_name}_impl.hpp | sed  "s/$class_name/template<$templates2>\n$class_name<$templates1>/" > .tmp
+		mv .tmp include/${class_name}_impl.hpp
 	fi
 	for ((a = ${#classes[@]} - 1;a >= 0; a--)); do
 		sed -i "/#pragma once/ a #include \"${classes[a]}.hpp\"" include/$class_name.hpp
