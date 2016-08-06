@@ -120,9 +120,36 @@ class_name=${classes[0]}
 classes=("${classes[@]:1}")
 flag=0
 if [ ${#classes[@]} -ne 0 ]; then
-	separator=", " # e.g. constructing regex, pray it does not contain %s
-	regex="$( printf "${separator}%s" "${classes[@]}" )"
-	parents="${regex:${#separator}}" # remove leading separator
+	#separator=", " # e.g. constructing regex, pray it does not contain %s
+	#regex="$( printf "${separator}%s" "${classes[@]}" )"
+	#parents="${regex:${#separator}}" # remove leading separator
+	inh_type=0 #public - default
+	for ((a=0; a <= ${#classes[@]} - 1; a++)); do
+		if [ ${classes[a]} == "-u" ];then #public
+			inh_type=0
+		elif [ ${classes[a]} == "-o" ];then #protected
+			inh_type=1
+		elif [ ${classes[a]} == "-i" ];then #private
+			inh_type=2
+		elif [ ${classes[a]} == "-vu" ];then #virtual public
+			inh_type=3
+		else
+			if [ $inh_type -eq 0 ]; then
+				parents="$parents public ${classes[a]},"
+				inh_type=0
+			elif [ $inh_type -eq 1 ]; then
+				parents="$parents protected ${classes[a]},"
+				inh_type=0
+			elif [ $inh_type -eq 2 ]; then
+				parents="$parents private ${classes[a]},"
+				inh_type=0
+			elif [ $inh_type -eq 3 ]; then
+				parents="$parents virtual public ${classes[a]},"
+				inh_type=0
+			fi
+		fi
+	done
+	parents=`echo "$parents" | sed 's/.$//'`
 	flag=1
 fi
 if [ -e "include" -a -e "src" ]; then
