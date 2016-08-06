@@ -47,7 +47,7 @@ With escape characters (currently escape character for space is not supported):
 
 cclass child2 par1\<char,long,std::string\> par2\<h,j,k\> -dm -vo -as -ag "int* index;static const char* name;mutable std::string s;" -vi -as -ag "boost::string bs;static uint32_t loop;"
 
-cclass class_name [parents_name] [[-t] templates_names] [-d options] [-vo [-as] [-ag]] [-vi [-as] [-ag]]:
+cclass class_name [[-i -o -u -vu]parents_name] [[-t] templates_names] [-d options] [-vo [-as] [-ag]] [-vi [-as] [-ag]]:
 
 -t  - template class [with list of template names]
 
@@ -56,6 +56,15 @@ cclass class_name [parents_name] [[-t] templates_names] [-d options] [-vo [-as] 
 -dc - delete (C)opy constructor
 
 -dm - delete (M)ove constructor
+
+
+-i - pr(I)vate inheritance
+
+-o - pr(O)tected inheritance
+
+-u - p(U)blic inheritance
+
+-vu - (V)irtual p(u)blic inheritance
 
 
 
