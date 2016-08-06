@@ -23,11 +23,13 @@ for opt in ${args[@]}; do
 		temps[${#temps[*]}]="$opt"
 	fi
 done
+method_args=`echo "$method_args" | cut -c 2-`
+ret_type=`echo "$ret_type" | cut -c 2-`
 if [ -z "$ret_type" ]; then
 	ret_type="void"
-elif [ "$ret_type" == " static" ]; then
+elif [ "$ret_type" == "static" ]; then
 	ret_type="static void"
-elif [ "$ret_type" == " virtual" ]; then
+elif [ "$ret_type" == "virtual" ]; then
 	ret_type="virtual void"
 fi
 if [ -e "include" -a -e "src" ]; then
@@ -56,11 +58,13 @@ if [ -e "include" -a -e "src" ]; then
 	method="$method*/\n        $ret_type $method_name ($method_args);"
 	if [ $flag1 -eq 0 ]; then
 		method_src="$ret_type $class_name::$method_name ($method_args)\n{\n "
-		if [ "$ret_type" != "void" -a "$ret_type" != "static void" -a "$ret_type" != "virtual void" ]; then
+		ret_type=`echo "$ret_type" | sed "s/virtual //"`
+		ret_type=`echo "$ret_type" | sed "s/static //"`
+		if [ "$ret_type" != "void" ]; then
 			method_src="$method_src    $ret_type result;\n"
 		fi
 		method_src="$method_src    "
-		if [ "$ret_type" != "void" -a "$ret_type" != "static void" -a "$ret_type" != "virtual void" ]; then
+		if [ "$ret_type" != "void" ]; then
 			method_src="$method_src\n    return result;"
 		fi
 		method_src="$method_src\n}\n"
@@ -75,11 +79,13 @@ if [ -e "include" -a -e "src" ]; then
 			temp2=" class ${templates2}" 
 		fi
 		method_src="template<$temp2>\n$ret_type $class_name<$temp1>::$method_name ($method_args)\n{\n"
-		if [ "$ret_type" != "void" -a "$ret_type" != "static void" -a "$ret_type" != "virtual void" ]; then
+		ret_type=`echo "$ret_type" | sed "s/virtual //"`
+		ret_type=`echo "$ret_type" | sed "s/static //"`
+		if [ "$ret_type" != "void" ]; then
 			method_src="$method_src    $ret_type result;\n"
 		fi
 		method_src="$method_src\t"
-		if [ "$ret_type" != "void" -a "$ret_type" != "static void" -a "$ret_type" != "virtual void" ]; then
+		if [ "$ret_type" != "void" ]; then
 			method_src="$method_src\n    return result;"
 		fi
 	fi
