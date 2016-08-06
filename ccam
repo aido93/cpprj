@@ -76,7 +76,7 @@ if [ -e "include" -a -e "src" ]; then
 			separator2=", class " # e.g. constructing regex, pray it does not contain %s                      
 			regex="$( printf "${separator2}%s" "${temps[@]}" )" 
 			temp2="${regex:${#separator2}}" # remove leading separator 
-			temp2=" class ${templates2}" 
+			temp2=" class ${temp2}" 
 		fi
 		method_src="template<$temp2>\n$ret_type $class_name<$temp1>::$method_name ($method_args)\n{\n"
 		ret_type=`echo "$ret_type" | sed "s/virtual //"`
@@ -86,7 +86,7 @@ if [ -e "include" -a -e "src" ]; then
 		fi
 		method_src="$method_src\t"
 		if [ "$ret_type" != "void" ]; then
-			method_src="$method_src\n    return result;"
+			method_src="$method_src\n    return result;\n}"
 		fi
 	fi
 	if [ "$access" == "-u" ]; then
