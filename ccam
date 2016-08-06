@@ -1,0 +1,71 @@
+#!/bin/bash
+set -e
+# class method creator
+# format: ccam [class_name] -[iou] name return type -a arguments [-t template types]
+# if return type does not exist then script uses 'void'
+args=("$@")
+class_name=${args[0]}
+access=${args[1]}
+method_name=${args[2]}
+args=("${args[@]:3}")
+flag0=0
+flag1=0
+for opt in ${args[@]}; do
+	if [ "$opt" != "-a" -a $flag0 -eq 0 ]; then
+		ret_type="$ret_type $opt"
+	elif [ "$opt" == "-a" ]; then
+		flag0=1
+	elif [ "$opt" != "-t" -a $flag1 -eq 0 ]; then
+		method_args="$method_args $opt"
+	elif [ "$opt" == "-t" ]; then
+		flag1=1
+	else
+		temps[${#temps[*]}]="$opt"
+	fi
+done
+if [ -z "$ret_type" ]; then
+	ret_type="void"
+fi
+if [ -e "include" -a -e "src" ]; then
+    if [ -e "include/$class_name.hpp"]; then
+		inc="include/$class_name.hpp"
+		if [ -e "src/$class_name.cpp" ]; then
+			src="src/$class_name.cpp"
+		elif [ -e "include/${class_name}_impl.hpp"]; then
+			src="include/${class_name}_impl.hpp"
+		else
+			echo "Project tree is broken (source not found). Exit"
+			exit
+		fi
+	else
+	    echo "Project tree is broken (header not found). Exit"
+		exit
+	fi
+	commas_count=`echo "$method_args" | grep -o , | wc -l`
+	method="        /*\\\brief \n        * "
+	for ((a = commas_count; a>=0; a--)); do
+		method="$method\\\param [in] - \n        * ";
+	done
+	if [ "ret_type" != "void" ]; then
+		method="$method\\\return \n        */"
+	fi
+	method="$method\n        $ret_type $method_name ($method_args);"
+	if [ $flag1 -eq 0 ]; then
+		method_src="$ret_type $class_name::$method_name ($method_args);"
+	else
+		method_src="template<$temp2>\n$ret_type $class_name<$temp1>::$method_name ($method_args);"
+	fi
+	if [ "$access" == "-u" ]; then
+		sed -i "/protected/i$method" $inc
+	elif [ "$access" == "-o" ]; then
+		sed -i "/private/i$method" $inc
+	elif [ "$access" == "-i" ]; then
+		sed -i "/}/i$method" $inc
+	else
+		echo "Wrong access type. Must be -i for pr(I)vate or -o for pr(O)tected or -u for p(U)blic. Exit"
+		exit
+	fi
+	echo "$method_src" >> $src
+else
+	echo "You are not in the project directory. Exit"
+fi
