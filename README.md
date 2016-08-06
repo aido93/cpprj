@@ -36,14 +36,16 @@ How to use:
 
 /bin/bash
 
-cclass -dm par1 -vo -as -ag "int* index;const char* name;std::string s;" -vi -as -ag "boost::string bs;uint32_t loop;"
+cclass par1 -dm -vo -as -ag "int* index;const char* name;std::string s;" -vi -as -ag "boost::string bs;uint32_t loop;"
 
-cclass -dm par2 -vo -as -ag "int* index;const char* name;std::string s;" -vi -as -ag "boost::string bs;uint32_t loop;"
+cclass par2 -dm -vo -as -ag "int* index;const char* name;std::string s;" -vi -as -ag "boost::string bs;uint32_t loop;"
 
-cclass -dm child par1 par2 -vo -as -ag "int* index;const char* name;std::string s;" -vi -as -ag "boost::string bs;uint32_t
+cclass child par1 par2 -dm -vo -as -ag "int* index;const char* name;std::string s;" -vi -as -ag "boost::string bs;uint32_t
 loop;"
 
-cclass [-d options] class_name [parents_name] [-vo [-as] [-ag]] [-vi [-as] [-ag]]:
+cclass class_name [parents_name] [[-t] templates_names] [-d options] [-vo [-as] [-ag]] [-vi [-as] [-ag]]:
+
+-t  - template class [with list of template names]
 
 -dd - delete (D)efault constructor
 
