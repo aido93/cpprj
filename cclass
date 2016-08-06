@@ -193,6 +193,7 @@ if [ -e "include" -a -e "src" ]; then
 				fi
 			i_types[a]=`echo "${i_types[a]}" | sed "s/static //"`
 			fi
+			i_types[a]=`echo "${i_types[a]}" | sed "s/mutable //"`
 		done
 		if [ $asi -eq 1 -a $agi -eq 1 ]; then 
 			for ((a = ${#i_vars[@]} - 1; a>=0; a--)); do
@@ -243,6 +244,7 @@ if [ -e "include" -a -e "src" ]; then
 				fi
 			o_types[a]=`echo "${o_types[a]}" | sed "s/static //"`
 			fi
+			o_types[a]=`echo "${o_types[a]}" | sed "s/mutable //"`
 		done
 		if [ $aso -eq 1 -a $ago -eq 1 ]; then 
 			for ((a = ${#o_vars[@]} - 1; a>=0; a--)); do                                                            
