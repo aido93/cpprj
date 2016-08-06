@@ -191,6 +191,7 @@ if [ -e "include" -a -e "src" ]; then
 				else
 					sed -i "/#include <utility>/ a template<$templates2>\n${i_types[a]} $class_name<$templates1>::${i_vars[a]};\n" include/${class_name}_impl.hpp
 				fi
+			i_types[a]=`echo "${i_types[a]}" | sed "s/static //"`
 			fi
 		done
 		if [ $asi -eq 1 -a $agi -eq 1 ]; then 
@@ -240,6 +241,7 @@ if [ -e "include" -a -e "src" ]; then
 				else
 					sed -i "/#include <utility>/ a template<$templates2>\n${o_types[a]} $class_name<$templates1>::${o_vars[a]};\n" include/${class_name}_impl.hpp
 				fi
+			o_types[a]=`echo "${o_types[a]}" | sed "s/static //"`
 			fi
 		done
 		if [ $aso -eq 1 -a $ago -eq 1 ]; then 
