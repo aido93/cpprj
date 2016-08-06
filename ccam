@@ -95,6 +95,8 @@ if [ -e "include" -a -e "src" ]; then
 		echo "Wrong access type. Must be -i for pr(I)vate or -o for pr(O)tected or -u for p(U)blic. Exit"
 		exit
 	fi
+	method_src=${method_src//\\/\\\\}
+	method_src=${method_src//\//\\\/\\}
 	echo "$method_src" >> $src
 else
 	echo "You are not in the project directory. Exit"
