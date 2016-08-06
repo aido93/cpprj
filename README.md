@@ -43,6 +43,10 @@ cclass par2 -dm -vo -as -ag "int* index;const char* name;std::string s;" -vi -as
 cclass child par1 par2 -dm -vo -as -ag "int* index;const char* name;std::string s;" -vi -as -ag "boost::string bs;uint32_t
 loop;"
 
+With escape characters (currently escape character for space is not supported):
+
+cclass child2 par1\<char,long,std::string\> par2\<h,j,k\> -dm -vo -as -ag "int* index;static const char* name;mutable std::string s;" -vi -as -ag "boost::string bs;static uint32_t loop;"
+
 cclass class_name [parents_name] [[-t] templates_names] [-d options] [-vo [-as] [-ag]] [-vi [-as] [-ag]]:
 
 -t  - template class [with list of template names]
