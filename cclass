@@ -134,11 +134,8 @@ if [ -e "include" -a -e "src" ]; then
 	d=$(date +%x\ %X)
 	m4 -D cls=$class_name -D d="$d" -D dm=$dm -D dd=$dd -D dc=$dc -D auth="$auth" /etc/cpprj/cls_dummy.hpp.m4 > include/$class_name.hpp
 	if [ $template_flag -eq 0 ]; then
-		m4 -D cls=$class_name -D d="$d" -D dm=$dm -D dd=$dd -D dc=$dc -D auth="$auth" 	/etc/cpprj/cls_dummy.cpp.m4 > src/$class_name.cpp
+		m4 -D cls=$class_name -D d="$d" -D dm=$dm -D dd=$dd -D dc=$dc -D auth="$auth" -D temp1="" -D temp2="" /etc/cpprj/cls_dummy.cpp.m4 > src/$class_name.cpp
 	else
-		m4 -D cls=$class_name -D d="$d" -D dm=$dm -D dd=$dd -D dc=$dc -D auth="$auth" 	/etc/cpprj/cls_dummy.cpp.m4 > include/${class_name}_impl.hpp
-		sed -i "7d" include/${class_name}_impl.hpp
-		sed -i "7i#pragma once" include/${class_name}_impl.hpp
 		if [ ${#temps[@]} -ne 0 ]; then
 			separator1=", " # e.g. constructing regex, pray it does not contain %s
 			regex="$( printf "${separator1}%s" "${temps[@]}" )"
@@ -147,11 +144,13 @@ if [ -e "include" -a -e "src" ]; then
 			regex="$( printf "${separator2}%s" "${temps[@]}" )"
 			templates2="${regex:${#separator2}}" # remove leading separator
 			templates2=" class ${templates2}"
+			echo "${templates2}"
 		fi 
+		m4 -D cls=$class_name -D d="$d" -D dm=$dm -D dd=$dd -D dc=$dc -D auth="$auth" -D temp2="\`\`<$templates1>''" -D temp1="\`\`template<$templates2 >''" /etc/cpprj/cls_dummy.cpp.m4 > include/${class_name}_impl.hpp
+		sed -i "7d" include/${class_name}_impl.hpp
+		sed -i "7i#pragma once" include/${class_name}_impl.hpp
 		echo "#include \"${class_name}_impl.hpp\"" >> include/$class_name.hpp
-		sed -i "s/class/template<$templates2> class/" include/$class_name.hpp
-		cat include/${class_name}_impl.hpp | sed  "s/$class_name/template<$templates2>\n$class_name<$templates1>/" > .tmp
-		mv .tmp include/${class_name}_impl.hpp
+		
 	fi
 	for ((a = ${#classes[@]} - 1;a >= 0; a--)); do
 		sed -i "/#pragma once/ a #include \"${classes[a]}.hpp\"" include/$class_name.hpp
@@ -262,6 +261,9 @@ if [ -e "include" -a -e "src" ]; then
 	if [ $template_flag -eq 0 ]; then
 		sed -i '/./,/^$/!d' src/$class_name.cpp
 	else
+		sed -i "s/class/template<$templates2> class/" include/$class_name.hpp
+		#cat include/${class_name}_impl.hpp | sed  "s/$class_name/template<$templates2>\n$class_name<$templates1>/" > .tmp
+		#mv .tmp include/${class_name}_impl.hpp
 		sed -i '/./,/^$/!d' include/${class_name}_impl.hpp
 	fi
 else
