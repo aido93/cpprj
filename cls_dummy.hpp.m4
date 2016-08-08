@@ -23,7 +23,7 @@ define(`constructors',`
 		ifelse($3,`0',`$1($1&);',`$1($1&) = delete;')
 		//Move
 		ifelse($4,`0',`$1& operator=(const $1&&);',`')
-		ifelse($4,`0',`$1($1&&)',`$1($1&&) = delete;')
+		ifelse($4,`0',`$1($1&&);',`$1($1&&) = delete;')
 		//Destruct
 		~$1();
 		//pub functions
