@@ -20,13 +20,15 @@ cls_parents(), a(_a)
 }
 ifelse($3,`0',`
 $7
-$1$8::$1(const $1$8& from)
+$1$8::$1(const $1$8& from) : 
+cls_parents()
 {
 	
 }
 
 $7
-$1$8::$1($1$8& from)
+$1$8::$1($1$8& from) : 
+cls_parents()
 {
 	
 }
