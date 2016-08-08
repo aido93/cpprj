@@ -16,24 +16,8 @@ ago=0 #(A)dd public (G)etters to pr(O)tected variables
 priv_vars=""
 prot_vars=""
 flag0=0
-template_flag=0
-tt=0
-flag_cl=0
 declare -a classes
 for opt in ${args[@]}; do
-	if [ "$opt" == "-t" ]; then
-		template_flag=1
-		tt=1
-		continue
-	fi
-	if [ $template_flag -eq 1 ]; then
-		if [ "$opt" == "-dd" ] || [ "$opt" == "-dc" ] || [ "$opt" == "-dm" ] || [ "$opt" == "-vi" ] || [ "$opt" == "-vo" ]; then 
-			template_flag=0
-		else
-			temps[${#temps[*]}]="$opt"
-			continue
-		fi
-	fi
     if [ $vi -eq 0 -a $vo -eq 0 ]; then
 		if [[ "$opt" == "-dd" ]]; then
 		    dd=1
@@ -90,11 +74,11 @@ for opt in ${args[@]}; do
 		fi
 	fi
 done
-template_flag=$tt
 declare -a i_types
 declare -a i_vars
 declare -a o_types
 declare -a o_vars
+
 priv_vars=`echo $priv_vars | sed "s/;/;\n/g"`
 OLD_IFS=${IFS}; 
 IFS=$'\x0a'; 
@@ -116,143 +100,62 @@ done;
 IFS=${OLD_IFS}
 prot_vars=`echo "$prot_vars" | sed "s|^|        /**\\\brief */\n        |g"`
 #priv_vars=`echo "$priv_vars" | sed 's/$/\\/g'`
+
 class_name=${classes[0]}
 classes=("${classes[@]:1}")
 flag=0
-declare -a class_mask
-class_counter=0
 if [ ${#classes[@]} -ne 0 ]; then
-	#separator=", " # e.g. constructing regex, pray it does not contain %s
-	#regex="$( printf "${separator}%s" "${classes[@]}" )"
-	#parents="${regex:${#separator}}" # remove leading separator
-	inh_type=0 #public - default
-	for ((a=0; a <= ${#classes[@]} - 1; a++)); do
-		class_counter=`expr $class_counter + 1`
-		class_mask[$class_counter-1]=0
-		if [ ${classes[a]} == "-u" ];then #public
-			inh_type=0
-		elif [ ${classes[a]} == "-o" ];then #protected
-			inh_type=1
-		elif [ ${classes[a]} == "-i" ];then #private
-			inh_type=2
-		elif [ ${classes[a]} == "-vu" ];then #virtual public
-			inh_type=3
-		else
-			class_mask[$class_counter-1]=1
-			if [ $inh_type -eq 0 ]; then
-				parents="$parents public ${classes[a]},"
-				inh_type=0
-			elif [ $inh_type -eq 1 ]; then
-				parents="$parents protected ${classes[a]},"
-				inh_type=0
-			elif [ $inh_type -eq 2 ]; then
-				parents="$parents private ${classes[a]},"
-				inh_type=0
-			elif [ $inh_type -eq 3 ]; then
-				parents="$parents virtual public ${classes[a]},"
-				inh_type=0
-			fi
-		fi
-	done
-	parents=`echo "$parents" | sed 's/.$//'`
+	separator=", " # e.g. constructing regex, pray it does not contain %s
+	regex="$( printf "${separator}%s" "${classes[@]}" )"
+	parents="${regex:${#separator}}" # remove leading separator
 	flag=1
 fi
 if [ -e "include" -a -e "src" ]; then
-	if [ -e "include/$class_name.hpp" -o -e "src/$class_name.cpp" -o -e "include/${class_name}_impl.hpp" ]; then
+	if [ -e "include/$class_name.hpp" -o -e "src/$class_name.cpp" ]; then
 		echo "File exists. Exit"
 		exit
 	fi
 	d=$(date +%x\ %X)
-	inc="include/$class_name.hpp"
-	src=""
-	m4 -D cls=$class_name -D d="$d" -D dm=$dm -D dd=$dd -D dc=$dc -D auth="$auth" /etc/cpprj/cls_dummy.hpp.m4 > $inc
-	if [ $template_flag -eq 0 ]; then
-	src="src/$class_name.cpp"
-		m4 -D cls=$class_name -D d="$d" -D dm=$dm -D dd=$dd -D dc=$dc -D auth="$auth" -D temp1="" -D temp2="" /etc/cpprj/cls_dummy.cpp.m4 > $src
-	else
-		if [ ${#temps[@]} -ne 0 ]; then
-			separator1=", " # e.g. constructing regex, pray it does not contain %s
-			regex="$( printf "${separator1}%s" "${temps[@]}" )"
-			templates1="${regex:${#separator1}}" # remove leading separator
-			separator2=", class " # e.g. constructing regex, pray it does not contain %s
-			regex="$( printf "${separator2}%s" "${temps[@]}" )"
-			templates2="${regex:${#separator2}}" # remove leading separator
-			templates2=" class ${templates2}"
-		fi 
-		src="include/${class_name}_impl.hpp"
-		m4 -D cls=$class_name -D d="$d" -D dm=$dm -D dd=$dd -D dc=$dc -D auth="$auth" -D temp2="\`\`<$templates1>''" -D temp1="\`\`template<$templates2 >''" /etc/cpprj/cls_dummy.cpp.m4 > $src
-		sed -i "7d" $inc
-		sed -i "7i#pragma once" $src
-		echo "#include \"${class_name}_impl.hpp\"" >> $inc
-		
-	fi
+	m4 -D cls=$class_name -D d="$d" -D dm=$dm -D dd=$dd -D dc=$dc -D auth="$auth" /etc/cpprj/cls_dummy.hpp.m4 > include/$class_name.hpp
+	m4 -D cls=$class_name -D d="$d" -D dm=$dm -D dd=$dd -D dc=$dc -D auth="$auth" /etc/cpprj/cls_dummy.cpp.m4 > src/$class_name.cpp
+	
 	for ((a = ${#classes[@]} - 1;a >= 0; a--)); do
-		if [ ${class_mask[a]} -eq 1 ]; then 
-			sed -i "/#pragma once/ a #include \"${classes[a]}.hpp\"" $inc
-		fi
+		sed -i "/#pragma once/ a #include \"${classes[a]}.hpp\"" include/$class_name.hpp
 	done
 	parents1=`echo $parents | sed 's|, |(), |g'`
-	parents2=`echo $parents1 | sed 's|public ||g' | sed  's|protected ||g' | sed 's|private ||g' | sed 's|virtual ||g'`
 	if [ $flag -eq 1 ]; then
-		sed -i "s|() cls_parents|(): $parents2|g" $src
-		sed -i "s|^cls_parents|$parents2|g" $src
-		sed -i "s|cls_parents|\: $parents|g" $inc
+		sed -i "s|() cls_parents|(): $parents1|g" src/$class_name.cpp
+		sed -i "s|^cls_parents|$parents1|g" src/$class_name.cpp
+		sed -i "s|cls_parents|\: $parents|g" include/$class_name.hpp
 	else
-		sed -i "s|cls_parents(), ||g" $src
-		sed -i "s|cls_parents()||g" $src                                          
-		sed -i "s|cls_parents||g" $inc
+		sed -i "s|cls_parents(), ||g" src/$class_name.cpp
+		sed -i "s|cls_parents()||g" src/$class_name.cpp                                            
+        sed -i "s|cls_parents||g" include/$class_name.hpp
 	fi
-	if [ $template_flag -eq 0 ]; then
-		sed -i "s|(SOURCE_FILES|(SOURCE_FILES\n\t\tsrc/$class_name.cpp|" CMakeLists.txt
-	fi
+	sed -i "s|(SOURCE_FILES|(SOURCE_FILES\n\t\tsrc/$class_name.cpp|" CMakeLists.txt
 	if [ $vi -eq 1 ]; then
 		priv_vars=${priv_vars//\\/\\\\}
 		priv_vars=${priv_vars//&/\\&}
 		priv_vars=${priv_vars//|/\\|}
 		priv_vars=${priv_vars//;/\\;\\}
 		priv_vars=${priv_vars//\//\\\/\\}
-		sed -i "s|\/\*private data\*\/|$priv_vars |" $inc
-		for ((a = ${#i_vars[@]} - 1; a>=0; a--)); do
-		tmp_str=`echo "${i_types[a]}" | sed -n "/static/p"`
-			if [ -n "$tmp_str" ]; then
-				if [ $template_flag -eq 0 ]; then
-					sed -i "/#include <utility>/ a ${i_types[a]} $class_name::${i_vars[a]};\n" $src
-				else
-					sed -i "/#include <utility>/ a template<$templates2>\n${i_types[a]} $class_name<$templates1>::${i_vars[a]};\n" $src
-				fi
-			i_types[a]=`echo "${i_types[a]}" | sed "s/static //"`
-			fi
-			i_types[a]=`echo "${i_types[a]}" | sed "s/mutable //"`
-		done
+		sed -i "s|\/\*private data\*\/|$priv_vars |" include/$class_name.hpp
 		if [ $asi -eq 1 -a $agi -eq 1 ]; then 
 			for ((a = ${#i_vars[@]} - 1; a>=0; a--)); do
-				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Setter method for variable ${i_vars[a]}\n\t\t\t\\\param [in] x - \n\t\t*\/\n\t\t void set_${i_vars[a]} (const ${i_types[a]} & x);" $inc
-				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Getter method for variable ${i_vars[a]}\n\t\t\t\\\return Value of variable ${i_vars[a]} \n\t\t*\/\n\t\t ${i_types[a]} get_${i_vars[a]} () const;" $inc
-				if [ $template_flag -eq 0 ]; then
-					sed -i "/\/\/methods/ a void $class_name::set_${i_vars[a]} (const ${i_types[a]} & x)\n{\n\t${i_vars[a]} = x;\n}" $src
-					sed -i "/\/\/methods/ a ${i_types[a]} $class_name::get_${i_vars[a]} ()\n{\n\treturn ${i_vars[a]}\;\n}" $src
-				else
-					sed -i "/\/\/methods/ a template<$templates2> \nvoid $class_name<$templates1>::set_${i_vars[a]} (const ${i_types[a]} & x)\n{\n\t${i_vars[a]} = x;\n}" $src
-					sed -i "/\/\/methods/ a template<$templates2> \n${i_types[a]} $class_name<$templates1>::get_${i_vars[a]} ()\n{\n\treturn ${i_vars[a]}\;\n}" $src
-				fi
+				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Setter method for variable ${i_vars[a]}\n\t\t\t\\\param [in] x - \n\t\t*\/\n\t\t void set_${i_vars[a]} (const ${i_types[a]} & x);" include/$class_name.hpp
+				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Getter method for variable ${i_vars[a]}\n\t\t\t\\\return Value of variable ${i_vars[a]} \n\t\t*\/\n\t\t ${i_types[a]} get_${i_vars[a]} () const;" include/$class_name.hpp
+				sed -i "/\/\/methods/ a void $class_name::set_${i_vars[a]} (const ${i_types[a]} & x)\n{\n\t${i_vars[a]} = x;\n}" src/$class_name.cpp
+                sed -i "/\/\/methods/ a ${i_types[a]} $class_name::get_${i_vars[a]} () const\n{\n\treturn ${i_vars[a]}\;\n}" src/$class_name.cpp
 			done
 		elif [ $asi -eq 1 ]; then
 			for ((a = ${#i_vars[@]} - 1; a>=0; a--)); do                                                            
-				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Setter method for variable ${i_vars[a]}\n\t\t\t\\\param [in] x - \n\t\t*/\n\t\t void set_${i_vars[a]} (const ${i_types[a]} & x);" $inc
-				if [ $template_flag -eq 0 ]; then
-					sed -i "/\/\/methods/ a void $class_name::set_${i_vars[a]} (const ${i_types[a]} & x)\n{\n\t${i_vars[a]} = x;\n}" $src
-				else
-					sed -i "/\/\/methods/ a template<$templates2> void $class_name<$templates1>::set_${i_vars[a]} (const ${i_types[a]} & x)\n{\n\t${i_vars[a]} = x;\n}" $src
-				fi
+				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Setter method for variable ${i_vars[a]}\n\t\t\t\\\param [in] x - \n\t\t*/\n\t\t void set_${i_vars[a]} (const ${i_types[a]} & x);" include/$class_name.hpp
+				sed -i "/\/\/methods/ a void $class_name::set_${i_vars[a]} (const ${i_types[a]} & x)\n{\n\t${i_vars[a]} = x;\n}" src/$class_name.cpp
 			done
 		elif [ $agi -eq 1 ]; then
-			for ((a = ${#i_vars[@]} - 1; a>=0; a--)); do
-				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Getter method for variable ${i_vars[a]}\n\t\t\t\\\return Value of variable ${i_vars[a]} \n\t\t*/\n\t\t ${i_types[a]} get_${i_vars[a]} () const;" $inc
-				if [ $template_flag -eq 0 ]; then
-					sed -i "/\/\/methods/ a ${i_types[a]} $class_name::get_${i_vars[a]} ()\n{\n\treturn ${i_vars[a]}\;\n}" $src
-				else
-					sed -i "/\/\/methods/ a template<$templates2> ${i_types[a]} $class_name<$templates1>::get_${i_vars[a]} ()\n{\n\treturn ${i_vars[a]}\;\n}" $src
-				fi
+			for ((a = ${#i_vars[@]} - 1; a>=0; a--)); do                                                            
+				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Getter method for variable ${i_vars[a]}\n\t\t\t\\\return Value of variable ${i_vars[a]} \n\t\t*/\n\t\t ${i_types[a]} get_${i_vars[a]} () const;" include/$class_name.hpp
+				sed -i "/\/\/methods/ a ${i_types[a]} $class_name::get_${i_vars[a]} () const\n{\n\treturn ${i_vars[a]}\;\n}" src/$class_name.cpp
 			done
 		fi
 	fi
@@ -262,59 +165,28 @@ if [ -e "include" -a -e "src" ]; then
 		prot_vars=${prot_vars//|/\\|}
 		prot_vars=${prot_vars//;/\\;\\}
 		prot_vars=${prot_vars//\//\\\/\\}
-		sed -i "s|\/\*protected data\*\/|$prot_vars |" $inc
-		for ((a = ${#o_vars[@]}-1; a>=0; a--)); do
-			tmp_str=`echo "${o_types[a]}" | sed -n "/static/p"`
-			if [ -n "$tmp_str" ]; then
-				if [ $template_flag -eq 0 ]; then
-					sed -i "/#include <utility>/ a ${o_types[a]} $class_name::${o_vars[a]};\n" $src
-				else
-					sed -i "/#include <utility>/ a template<$templates2>\n${o_types[a]} $class_name<$templates1>::${o_vars[a]};\n" $src
-				fi
-			o_types[a]=`echo "${o_types[a]}" | sed "s/static //"`
-			fi
-			o_types[a]=`echo "${o_types[a]}" | sed "s/mutable //"`
-		done
+		sed -i "s|\/\*protected data\*\/|$prot_vars |" include/$class_name.hpp
 		if [ $aso -eq 1 -a $ago -eq 1 ]; then 
-			for ((a = ${#o_vars[@]} - 1; a>=0; a--)); do
-				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Setter method for variable ${o_vars[a]}\n\t\t\t\\\param [in] x - \n\t\t*/\n\t\t void set_${o_vars[a]} (const ${o_types[a]} & x);" $inc
-				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Getter method for variable ${o_vars[a]}\n\t\t\t\\\return Value of variable ${o_vars[a]} \n\t\t*/\n\t\t ${o_types[a]} get_${o_vars[a]} () const;" $inc
-				if [ $template_flag -eq 0 ]; then
-					sed -i "/\/\/methods/ a void $class_name::set_${o_vars[a]} (const ${o_types[a]} & x)\n{\n\t${o_vars[a]} = x;\n}" $src
-					sed -i "/\/\/methods/ a ${o_types[a]} $class_name::get_${o_vars[a]} ()\n{\n\treturn ${o_vars[a]}\;\n}" $src
-				else
-					sed -i "/\/\/methods/ a template<$templates2>\nvoid $class_name<$templates1>::set_${o_vars[a]} (const ${o_types[a]} & x)\n{\n\t${o_vars[a]} = x;\n}" $src
-					sed -i "/\/\/methods/ a template<$templates2>\n${o_types[a]} $class_name<$templates1>::get_${o_vars[a]} ()\n{\n\treturn ${o_vars[a]}\;\n}" $src
-				fi
+			for ((a = ${#o_vars[@]} - 1; a>=0; a--)); do                                                            
+				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Setter method for variable ${o_vars[a]}\n\t\t\t\\\param [in] x - \n\t\t*/\n\t\t void set_${o_vars[a]} (const ${o_types[a]} & x);" include/$class_name.hpp
+				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Getter method for variable ${o_vars[a]}\n\t\t\t\\\return Value of variable ${o_vars[a]} \n\t\t*/\n\t\t ${o_types[a]} get_${o_vars[a]} () const;" include/$class_name.hpp
+				sed -i "/\/\/methods/ a void $class_name::set_${o_vars[a]} (const ${o_types[a]} & x)\n{\n\t${o_vars[a]} = x;\n}" src/$class_name.cpp
+				sed -i "/\/\/methods/ a ${o_types[a]} $class_name::get_${o_vars[a]} () const\n{\n\treturn ${o_vars[a]}\;\n}" src/$class_name.cpp
 			done
 		elif [ $asi -eq 1 ]; then
 			for ((a = ${#o_vars[@]} - 1; a>=0; a--)); do                                                            
-				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Setter method for variable ${o_vars[a]}\n\t\t\t\\\param [in] x - \n\t\t*/\n\t\t void set_${o_vars[a]} (const ${o_types[a]} & x);" $inc
-				
-				if [ $template_flag -eq 0 ]; then
-					sed -i "/\/\/methods/ a void $class_name::set_${o_vars[a]} (const ${o_types[a]} & x)\n{\n\t${o_vars[a]} = x;\n}" $src
-				else
-					sed -i "/\/\/methods/ a template<$template2>\nvoid $class_name<$templates1>::set_${o_vars[a]} (const ${o_types[a]} & x)\n{\n\t${o_vars[a]} = x;\n}" $src
-				fi
+				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Setter method for variable ${o_vars[a]}\n\t\t\t\\\param [in] x - \n\t\t*/\n\t\t void set_${o_vars[a]} (const ${o_types[a]} & x);" include/$class_name.hpp
+				sed -i "/\/\/methods/ a void $class_name::set_${o_vars[a]} (const ${o_types[a]} & x)\n{\n\t${o_vars[a]} = x;\n}" src/$class_name.cpp
 			done
 		elif [ $agi -eq 1 ]; then
 			for ((a = ${#i_vars[@]} - 1; a>=0; a--)); do                                                            
-				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Getter method for variable ${o_vars[a]}\n\t\t\t\\\return Value of variable ${o_vars[a]} \n\t\t*/\n\t\t ${o_types[a]} get_${o_vars[a]} () const;" $inc
-				if [ $template_flag -eq 0 ]; then
-					sed -i "/\/\/methodss/ a ${o_types[a]} $class_name::get_${o_vars[a]} ()\n{\n\treturn ${o_vars[a]}\;\n}" $src
-				else
-					sed -i "/\/\/methodss/ a template<$templates2>\n${o_types[a]} $class_name<$templates1>::get_${o_vars[a]} ()\n{\n\treturn ${o_vars[a]}\;\n}" $src
-				fi
+				sed -i "/\/\/pub functions/ a \\\t\t\/**\t\\\brief Getter method for variable ${o_vars[a]}\n\t\t\t\\\return Value of variable ${o_vars[a]} \n\t\t*/\n\t\t ${o_types[a]} get_${o_vars[a]} () const;" include/$class_name.hpp
+				sed -i "/\/\/methodss/ a ${o_types[a]} $class_name::get_${o_vars[a]} ()\n{\n\treturn ${o_vars[a]}\;\n}" src/$class_name.cpp
 			done
 		fi
 	fi
-	sed -i '/./,/^$/!d' $inc
-	if [ $template_flag -eq 0 ]; then
-		sed -i '/./,/^$/!d' $src
-	else
-		sed -i "s/class/template<$templates2> class/" $inc
-		sed -i '/./,/^$/!d' $src
-	fi
+	sed -i '/./,/^$/!d' include/$class_name.hpp
+	sed -i '/./,/^$/!d' src/$class_name.cpp
 else
 	echo "You are not in the project directory! Exit"
 fi
