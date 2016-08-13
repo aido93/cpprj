@@ -333,6 +333,8 @@ if [ -e "include" -a -e "src" ]; then
 		sed -i "s/class/template<$templates2> class/" $inc
 		sed -i '/./,/^$/!d' $src
 	fi
+		cat $src | tr '\012' '@' | sed "s/: @@/@/g" | tr '@' '\012' > .tmp
+		mv .tmp $src
 else
 	echo "You are not in the project directory! Exit"
 fi
