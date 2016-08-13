@@ -190,15 +190,11 @@ if [ -e "include" -a -e "src" ]; then
 		
 	fi
 	cls=""
-	class_mask[${#class_mask[@]}]=0
-	for ((a = 0; a < ${#class_mask[@]} - 1; a++)); do
-		if [ ${class_mask[a]} -eq 0 -a ${class_mask[a+1]} -eq 1 ]; then
-			cls="${classes[a + 1]}"
-		elif [ ${class_mask[a]} -eq 1 -a ${class_mask[a+1]} -eq 1 ]; then
-			cls="$cls ${classes[a + 1]}"	
-		elif [ ${class_mask[a]} -eq 1 -a ${class_mask[a+1]} -eq 0 ]; then
-			cls=`echo "$cls" | sed "s|<.*>||g"`
-			cls=`echo "$cls" | sed "s|::|/|g"`
+	for ((a = ${#classes[@]} - 1;a >= 0; a--)); do
+		if [ ${class_mask[a]} -eq 1 ]; then 
+			cls="$cls ${classes[a]}"	
+		else
+			cls=`echo "$cls" | sed "s|<*>||g" | sed "s|::|/|g" | sed -e 's/^.\{1\}//'`
 			sed -i "/#pragma once/ a #include \"${cls}.hpp\"" $inc
 			if [ -w "include/${cls}.hpp" ]; then
 				str=`sed -ne "/virtual ~$cls/p" include/$cls.hpp`
