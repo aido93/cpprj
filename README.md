@@ -84,7 +84,7 @@ rmclass [class_name]
 
 **4) If you wanna add some method to the class, use:**
 
-ccam [class_name] -[iou] -[pf] name return type -a arguments [-t template types]
+ccam [class_name] -[iou] -[pfo] name return type -a arguments [-t template types]
 
 -i - pr(I)vate
 
@@ -95,6 +95,8 @@ ccam [class_name] -[iou] -[pf] name return type -a arguments [-t template types]
 -p - pure virtual
 
 -f - final
+
+-o - override
 
 if return type is empty then uses 'void' type
 
