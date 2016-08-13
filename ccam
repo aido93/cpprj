@@ -5,17 +5,23 @@ set -e
 # if return type does not exist then script uses 'void'
 # p - pure virtual
 # f - finished
+# o - override
 args=("$@")
 class_name=${args[0]}
 access=${args[1]}
 pure_virt=0
 fin=0
+override=0
 if [ "${args[2]}" == "-f" ]; then
 	fin=1
 	method_name=${args[3]}
 	args=("${args[@]:4}")
 elif [ "${args[2]}" == "-p" ]; then
 	pure_virt=1
+	method_name=${args[3]}
+	args=("${args[@]:4}")
+elif [ "${args[2]}" == "-o" ]; then
+	override=1
 	method_name=${args[3]}
 	args=("${args[@]:4}")
 else
@@ -76,6 +82,8 @@ if [ -e "include" -a -e "src" ]; then
 	if [ -n "$is_virtual" ]; then
 		if [ $fin -eq 1 ]; then
 			method="$method final"
+		if [ $override -eq 1 ]; then
+			method="$method override"
 		elif [ $pure_virt -eq 1 ]; then
 			method="$method = 0"
 		fi
