@@ -40,14 +40,14 @@ cclass par1 -dm -vo -as -ag "int* index;const char* name;std::string s;" -vi -as
 
 cclass par2 -dm -vo -as -ag "int* index;const char* name;std::string s;" -vi -as -ag "boost::string bs;uint32_t loop;"
 
-cclass child par1 par2 -dm -vo -as -ag "int* index;const char* name;std::string s;" -vi -as -ag "boost::string bs;uint32_t
+cclass child -u par1 -i par2 -dm -vo -as -ag "int* index;const char* name;std::string s;" -vi -as -ag "boost::string bs;uint32_t
 loop;"
 
-cclass parent1 -i par0 -o par2 -u par3 -vu par4 par5 -t U V G -dm -vo -as -ag "int* index;const char* name;std::string s;" -vi -as -ag "boost::string bs;uint32_t loop;
+cclass parent1 -i par0 -o par2 -u par3 -vu par4 -u par5 -t U V G -dm -vo -as -ag "int* index;const char* name;std::string s;" -vi -as -ag "boost::string bs;uint32_t loop;
 
 With escape characters (currently escape character for space is not supported):
 
-cclass child2 par1\<char,long,std::string\> par2\<h,j,k\> -dm -vo -as -ag "int* index;static const char* name;mutable std::string s;" -vi -as -ag "boost::string bs;static uint32_t loop;"
+cclass child2 -u par1\\<char,long,std::string\\> par2\\<h,j,k\\> -dm -vo -as -ag "int* index;static const char* name;mutable std::string s;" -vi -as -ag "boost::string bs;static uint32_t loop;"
 
 cclass class_name [[-i -o -u -vu]parents_name] [[-t] templates_names] [-d options] [-vo [-as] [-ag]] [-vi [-as] [-ag]]:
 
