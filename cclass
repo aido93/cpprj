@@ -214,7 +214,7 @@ if [ -e "include" -a -e "src" ]; then
 			cls=""
 		fi
 	done
-	if [ $pvd -eq 1]; then
+	if [ $pvd -eq 1 ]; then
 		sed -i "s|~$class_name()|virtual ~$class_name() = 0|" $inc
 	fi
 	parents1=`echo $parents | sed 's|, |(), |g'`
