@@ -108,27 +108,27 @@ declare -a i_vars
 declare -a o_types
 declare -a o_vars
 priv_vars=`echo $priv_vars | sed "s/;/;\n/g"`
-tmp=echo "$priv_vars" | sed -n "/std::vector/p"
+tmp=`echo "$priv_vars" | sed -n "/std::vector/p"`
 if [ -z "$tmp" ]; then
 	vector=1
 fi
-tmp=echo "$priv_vars" | sed -n "/std::string/p"
+tmp=`echo "$priv_vars" | sed -n "/std::string/p"`
 if [ -z "$tmp" ]; then
 	string=1
 fi
-tmp=echo "$priv_vars" | sed -n "/std::[io]fstream/p"
+tmp=`echo "$priv_vars" | sed -n "/std::[io]fstream/p"`
 if [ -z "$tmp" ]; then
 	fstream=1
 fi
-tmp=echo "$priv_vars" | sed -n "/std::map/p"
+tmp=`echo "$priv_vars" | sed -n "/std::map/p"`
 if [ -z "$tmp" ]; then
 	map=1
 fi
-tmp=echo "$priv_vars" | sed -n "/std::queue/p"
+tmp=`echo "$priv_vars" | sed -n "/std::queue/p"`
 if [ -z "$tmp" ]; then
 	queue=1
 fi
-tmp=echo "$priv_vars" | sed -n "/std::deque/p"
+tmp=`echo "$priv_vars" | sed -n "/std::deque/p"`
 if [ -z "$tmp" ]; then
 	deque=1
 fi
@@ -144,27 +144,27 @@ priv_vars=`echo "$priv_vars" | sed "s|^|        /**\\\brief */\n        |g"`
 #priv_vars=`echo "$priv_vars" | sed 's/$/\\/g'`
 
 prot_vars=`echo $prot_vars | sed "s/;/;\n/g"`
-tmp=echo "$prot_vars" | sed -n "/std::vector/p"
+tmp=`echo "$prot_vars" | sed -n "/std::vector/p"`
 if [ -z "$tmp" ]; then
 	vector=1
 fi
-tmp=echo "$prot_vars" | sed -n "/std::string/p"
+tmp=`echo "$prot_vars" | sed -n "/std::string/p"`
 if [ -z "$tmp" ]; then
 	string=1
 fi
-tmp=echo "$prot_vars" | sed -n "/std::[io]fstream/p"
+tmp=`echo "$prot_vars" | sed -n "/std::[io]fstream/p"`
 if [ -z "$tmp" ]; then
 	fstream=1
 fi
-tmp=echo "$prot_vars" | sed -n "/std::map/p"
+tmp=`echo "$prot_vars" | sed -n "/std::map/p"`
 if [ -z "$tmp" ]; then
 	map=1
 fi
-tmp=echo "$prot_vars" | sed -n "/std::queue/p"
+tmp=`echo "$prot_vars" | sed -n "/std::queue/p"`
 if [ -z "$tmp" ]; then
 	queue=1
 fi
-tmp=echo "$prot_vars" | sed -n "/std::deque/p"
+tmp=`echo "$prot_vars" | sed -n "/std::deque/p"`
 if [ -z "$tmp" ]; then
 	deque=1
 fi
