@@ -19,11 +19,16 @@ flag0=0
 template_flag=0
 tt=0
 flag_cl=0
+pvd=0 # pure virtual destructor flag
 declare -a classes
 for opt in ${args[@]}; do
 	if [ "$opt" == "-t" ]; then
 		template_flag=1
 		tt=1
+		continue
+	fi
+	if [ "$opt" == "-pvd" ]; then
+		pvd=1
 		continue
 	fi
 	if [ $template_flag -eq 1 ]; then
@@ -209,6 +214,9 @@ if [ -e "include" -a -e "src" ]; then
 			cls=""
 		fi
 	done
+	if [ $pvd -eq 1]; then
+		sed -i "s|~$class_name()|virtual ~$class_name() = 0|" $inc
+	fi
 	parents1=`echo $parents | sed 's|, |(), |g'`
 	parents2=`echo $parents1 | sed 's|public ||g' | sed  's|protected ||g' | sed 's|private ||g' | sed 's|virtual ||g'`
 	if [ $flag -eq 1 ]; then
