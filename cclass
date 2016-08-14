@@ -20,6 +20,13 @@ template_flag=0
 tt=0
 flag_cl=0
 pvd=0 # pure virtual destructor flag
+# STL types
+vector=0
+map=0
+queue=0
+deque=0
+fstream=0
+string=0
 declare -a classes
 for opt in ${args[@]}; do
 	if [ "$opt" == "-t" ]; then
@@ -101,6 +108,31 @@ declare -a i_vars
 declare -a o_types
 declare -a o_vars
 priv_vars=`echo $priv_vars | sed "s/;/;\n/g"`
+tmp=echo "$priv_vars" | sed -n "/std::vector/p"
+if [ -z "$tmp" ]; then
+	vector=1
+fi
+tmp=echo "$priv_vars" | sed -n "/std::string/p"
+if [ -z "$tmp" ]; then
+	string=1
+fi
+tmp=echo "$priv_vars" | sed -n "/std::[io]fstream/p"
+if [ -z "$tmp" ]; then
+	fstream=1
+fi
+tmp=echo "$priv_vars" | sed -n "/std::map/p"
+if [ -z "$tmp" ]; then
+	map=1
+fi
+tmp=echo "$priv_vars" | sed -n "/std::queue/p"
+if [ -z "$tmp" ]; then
+	queue=1
+fi
+tmp=echo "$priv_vars" | sed -n "/std::deque/p"
+if [ -z "$tmp" ]; then
+	deque=1
+fi
+
 OLD_IFS=${IFS}; 
 IFS=$'\x0a'; 
 for i in $priv_vars; do 
@@ -112,6 +144,30 @@ priv_vars=`echo "$priv_vars" | sed "s|^|        /**\\\brief */\n        |g"`
 #priv_vars=`echo "$priv_vars" | sed 's/$/\\/g'`
 
 prot_vars=`echo $prot_vars | sed "s/;/;\n/g"`
+tmp=echo "$prot_vars" | sed -n "/std::vector/p"
+if [ -z "$tmp" ]; then
+	vector=1
+fi
+tmp=echo "$prot_vars" | sed -n "/std::string/p"
+if [ -z "$tmp" ]; then
+	string=1
+fi
+tmp=echo "$prot_vars" | sed -n "/std::[io]fstream/p"
+if [ -z "$tmp" ]; then
+	fstream=1
+fi
+tmp=echo "$prot_vars" | sed -n "/std::map/p"
+if [ -z "$tmp" ]; then
+	map=1
+fi
+tmp=echo "$prot_vars" | sed -n "/std::queue/p"
+if [ -z "$tmp" ]; then
+	queue=1
+fi
+tmp=echo "$prot_vars" | sed -n "/std::deque/p"
+if [ -z "$tmp" ]; then
+	deque=1
+fi
 OLD_IFS=${IFS}; 
 IFS=$'\x0a'; 
 for i in $prot_vars; do 
@@ -214,6 +270,24 @@ if [ -e "include" -a -e "src" ]; then
 			cls=""
 		fi
 	done
+	if [ $vector -eq 1 ]; then
+		sed -i "/#pragma once/ a #include <vector>" $inc
+	fi
+	if [ $map -eq 1 ]; then
+		sed -i "/#pragma once/ a #include <map>" $inc
+	fi
+	if [ $string -eq 1 ]; then
+		sed -i "/#pragma once/ a #include <string>" $inc
+	fi
+	if [ $queue -eq 1 ]; then
+		sed -i "/#pragma once/ a #include <queue>" $inc
+	fi
+	if [ $fstream -eq 1 ]; then
+		sed -i "/#pragma once/ a #include <fstream>" $inc
+	fi
+	if [ $deque -eq 1 ]; then
+		sed -i "/#pragma once/ a #include <deque>" $inc
+	fi
 	if [ $pvd -eq 1 ]; then
 		sed -i "s|~$class_name()|virtual ~$class_name() = 0|" $inc
 	fi
