@@ -82,7 +82,7 @@ if [ -e "include" -a -e "src" ]; then
 	if [ -n "$is_virtual" ]; then
 		if [ $fin -eq 1 ]; then
 			method="$method final"
-		if [ $override -eq 1 ]; then
+		elif [ $override -eq 1 ]; then
 			method="$method override"
 		elif [ $pure_virt -eq 1 ]; then
 			method="$method = 0"
