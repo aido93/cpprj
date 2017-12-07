@@ -1,0 +1,3 @@
+#!/bin/bash
+# Class blank creator
+# Syntax cclass1 <class_name>[-u,-i,-vu]<parent_classes> [-pvd ] [-t] [-dd,-dm,-dc] [-vi,-vo][vars][-as,-ag] [-notest]

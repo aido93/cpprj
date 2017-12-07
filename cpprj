@@ -10,6 +10,9 @@ mkdir $dir/build
 mkdir $dir/src
 mkdir $dir/include
 mkdir $dir/docs
+if [ -n $test_dir ]; then
+    mkdir $dir/$test_dir
+fi
 touch $dir/docs/dummy
 cd $dir
 cp /etc/cpprj/CMakeLists.txt .
@@ -23,9 +26,10 @@ if [ "$type" = "cli" ]; then
 elif [ "$type" = "lib" ]; then
 	cp /etc/cpprj/lib.cpp src/main.cpp
 fi
+
 d=$(date +%x\ %X)
 sed -i "s|\$prj_name|$name|g" src/main.cpp
-sed -i "s|\$auth|$auth|g"     src/main.cpp
+sed -i "s|\$auth|$maintainer_name <$maintainer_email>|g"     src/main.cpp
 sed -i "s|\$ver|$ver|g"       src/main.cpp
 sed -i "s|\$desc|$desc|g"     src/main.cpp
 sed -i "s|\$d|$d|g"           src/main.cpp

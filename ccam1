@@ -1,0 +1,26 @@
+#!/bin/bash
+# Class method blank creator
+# Syntax ccam1 <class_name> [-iou] [-pfo] <method_name> <return_type> -a <args> -t <template types> {-fit -fc -do -while -switch}
+# {} - arguments of options is the end of programmins structure
+# for example:
+# 1) -fc -fc i=0:10 j=100:-20:-2
+# is equivalent for:
+# for [uint32_t i=0; i<10; ++i]
+# {
+#     for [int32_t j=100; j<-20; j-=2]
+#     {
+#         
+#     }
+# }
+# 
+# 2) -fc i=0:10 -fc j=100:-20:-2
+# is equivalent for:
+# for [uint32_t i=0; i<10; ++i]
+# {
+#     
+# }
+# for [int32_t j=100; j<-20; j-=2]
+# {
+#     
+# }
+# And so on
