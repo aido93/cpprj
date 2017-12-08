@@ -289,21 +289,13 @@ if [ $agi -eq 1 ]; then
 echo -e "\tAdded public getters for protected variables"
 fi
 echo "Braced includes in header:"
-printf '\t'
-printf '%s ' "${binch[@]}"
-printf '\n'
+printf '\t"%s"\n' "${binch[@]}"
 echo "Braced includes in source:"
-printf '\t'
-printf '%s ' "${bincs[@]}"
-printf '\n'
+printf '\t"%s"\n' "${bincs[@]}"
 echo "Quoted includes in header:"
-printf '\t'
-printf '%s ' "${quinch[@]}"
-printf '\n'
+printf '\t<%s>\n' "${quinch[@]}"
 echo "Quoted includes in source:"
-printf '\t'
-printf '%s ' "${quincs[@]}"
-printf '\n'
+printf '\t<%s>\n' "${quincs[@]}"
 echo "Private parents:"
 printf '\t'
 printf '%s ' "${private_parents[@]}"
