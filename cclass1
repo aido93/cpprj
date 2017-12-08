@@ -84,7 +84,7 @@ function zero_flags {
 	quincs_flag=0
 	bincs_flag=0
 }
-class_name=${args[1]}
+class_name=${args[0]}
 for opt in ${args[@]}; do
 	if [ "$opt" == "-n" ]; then
 		zero_flags
@@ -270,39 +270,56 @@ if [ $q -eq 1 ]; then
 echo "Class is Q_OBJECT"
 fi
 echo "Namespaces:"
-echo "\t$namespaces"
+printf '\t%s::' "${namespaces[@]}"
+printf '\n'
 echo "Private variables: "
-echo "\t$priv_vars"
+echo -e "\t$priv_vars"
 if [ $asi -eq 1 ]; then
-echo "\tAdded public setters for private variables"
+echo -e "\tAdded public setters for private variables"
 fi
 if [ $agi -eq 1 ]; then
-echo "\tAdded public getters for private variables"
+echo -e "\tAdded public getters for private variables"
 fi
 echo "Protected variables: "
-echo "\t$prot_vars"
+echo -e "\t$prot_vars"
 if [ $asi -eq 1 ]; then
-echo "\tAdded public setters for protected variables"
+echo -e "\tAdded public setters for protected variables"
 fi
 if [ $agi -eq 1 ]; then
-echo "\tAdded public getters for protected variables"
+echo -e "\tAdded public getters for protected variables"
 fi
 echo "Braced includes in header:"
-echo "\t$binch"
+printf '\t'
+printf '%s ' "${binch[@]}"
+printf '\n'
 echo "Braced includes in source:"
-echo "\t$bincs"
+printf '\t'
+printf '%s ' "${bincs[@]}"
+printf '\n'
 echo "Quoted includes in header:"
-echo "\t$quinch"
+printf '\t'
+printf '%s ' "${quinch[@]}"
+printf '\n'
 echo "Quoted includes in source:"
-echo "\t$quincs"
+printf '\t'
+printf '%s ' "${quincs[@]}"
+printf '\n'
 echo "Private parents:"
-echo "\t$private_parents"
+printf '\t'
+printf '%s ' "${private_parents[@]}"
+printf '\n'
 echo "Public parents:"
-echo "\t$public_parents"
+printf '\t'
+printf '%s ' "${public_parents[@]}"
+printf '\n'
 echo "Virtual public parents:"
-echo "\t$virtual_public_parents"
+printf '\t'
+printf '%s ' "${virtual_public_parents[@]}"
+printf '\n'
 echo "Template types:"
-echo "\t$template_types"
+printf '\t'
+printf '%s ' "${template_types[@]}"
+printf '\n'
 echo "Deleted constructors:"
 deleted=""
 if [ $dd -eq 1 ]; then
@@ -314,6 +331,11 @@ fi
 if [ $dc -eq 1 ]; then
 deleted="copy, $deleted"
 fi
+if [[ -n $deleted ]]; then
+echo -e "\t$deleted"
+else
+echo -e "\tNo"
+fi
 if [ $pvd -eq 1 ]; then
 echo "Added pure virtual destructor"
 fi
@@ -322,7 +344,6 @@ echo "Class does not have test suite"
 else
 echo "Class has test suite"
 fi
-echo "\t$deleted"
 
 echo "Added STL includes:"
 stl=""
@@ -338,4 +359,4 @@ fi
 if [ $util -eq 1 ]; then
 stl="<util> $stl"
 fi
-echo "\t$stl"
+echo -e "\t$stl"
