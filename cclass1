@@ -189,22 +189,22 @@ for opt in ${args[@]}; do
 	fi
 	if [ "$opt" == "-quinch" ]; then 
 		zero_flags
-		quinch=1
+		quinch_flag=1
 		continue
 	fi
 	if [ "$opt" == "-quincs" ]; then 
 		zero_flags
-		quincs=1
+		quincs_flag=1
 		continue
 	fi
 	if [ "$opt" == "-binch" ]; then 
 		zero_flags
-		binch=1
+		binch_flag=1
 		continue
 	fi
 	if [ "$opt" == "-bincs" ]; then 
 		zero_flags
-		bincs=1
+		bincs_flag=1
 		continue
 	fi
 	
