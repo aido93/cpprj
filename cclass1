@@ -254,5 +254,13 @@ for opt in ${args[@]}; do
 		continue
 	fi
 
+	if [ $vo -eq 1 ]; then
+		prot_vars="$opt"
+		continue
+	fi
+	if [ $vi -eq 1 ]; then
+		priv_vars="$opt"
+		continue
+	fi
 done
 
