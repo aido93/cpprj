@@ -40,29 +40,29 @@ aso=0 #(A)dd public (S)etters to pr(O)tected variables
 ago=0 #(A)dd public (G)etters to pr(O)tected variables
 
 namespace_flag=0
-namespaces="" #class namespace
+declare -a namespaces #class namespace
 template_flag=0
-template_types=""
+declare -a template_types
+u=0
+declare -a public_parents
+i=0
+declare -a private_parents
+vu=0
+declare -a virtual_public_parents
 vi=0
 priv_vars=""
 vo=0
 prot_vars=""
-u=0
-public_parents=""
-i=0
-private_parents=""
-vu=0
-virtual_public_parents=""
 
 # include settings
 quinch_flag=0
-quinch=""
+declare -a quinch
 binch_flag=0
-binch=""
+declare -a binch
 quincs_flag=0
-quincs=""
+declare -a quincs
 bincs_flag=0
-bincs=""
+declare -a bincs
 
 # auxiliary settings
 notest=0 #Disable test-file generation
@@ -84,7 +84,7 @@ function zero_flags {
 	quincs_flag=0
 	bincs_flag=0
 }
-declare -a classes
+class_name=${args[1]}
 for opt in ${args[@]}; do
 	if [ "$opt" == "-n" ]; then
 		zero_flags
@@ -220,17 +220,17 @@ for opt in ${args[@]}; do
 	fi
 
 	if [ $u -eq 1 ]; then
-		public_parents[${#public_parentss[*]}]="$opt"
+		public_parents[${#public_parents[*]}]="$opt"
 		continue
 	fi
 
 	if [ $i -eq 1 ]; then
-		private_parents[${#private_parentss[*]}]="$opt"
+		private_parents[${#private_parents[*]}]="$opt"
 		continue
 	fi
 
 	if [ $vu -eq 1 ]; then
-		virtual_public_parents[${#virtual_public_parentss[*]}]="$opt"
+		virtual_public_parents[${#virtual_public_parents[*]}]="$opt"
 		continue
 	fi
 
@@ -264,3 +264,78 @@ for opt in ${args[@]}; do
 	fi
 done
 
+echo "Debug: "
+echo "Class name: $class_name"
+if [ $q -eq 1 ]; then
+echo "Class is Q_OBJECT"
+fi
+echo "Namespaces:"
+echo "\t$namespaces"
+echo "Private variables: "
+echo "\t$priv_vars"
+if [ $asi -eq 1 ]; then
+echo "\tAdded public setters for private variables"
+fi
+if [ $agi -eq 1 ]; then
+echo "\tAdded public getters for private variables"
+fi
+echo "Protected variables: "
+echo "\t$prot_vars"
+if [ $asi -eq 1 ]; then
+echo "\tAdded public setters for protected variables"
+fi
+if [ $agi -eq 1 ]; then
+echo "\tAdded public getters for protected variables"
+fi
+echo "Braced includes in header:"
+echo "\t$binch"
+echo "Braced includes in source:"
+echo "\t$bincs"
+echo "Quoted includes in header:"
+echo "\t$quinch"
+echo "Quoted includes in source:"
+echo "\t$quincs"
+echo "Private parents:"
+echo "\t$private_parents"
+echo "Public parents:"
+echo "\t$public_parents"
+echo "Virtual public parents:"
+echo "\t$virtual_public_parents"
+echo "Template types:"
+echo "\t$template_types"
+echo "Deleted constructors:"
+deleted=""
+if [ $dd -eq 1 ]; then
+deleted="default, $deleted"
+fi
+if [ $dm -eq 1 ]; then
+deleted="move, $deleted"
+fi
+if [ $dc -eq 1 ]; then
+deleted="copy, $deleted"
+fi
+if [ $pvd -eq 1 ]; then
+echo "Added pure virtual destructor"
+fi
+if [ $notest -eq 1 ]; then
+echo "Class does not have test suite"
+else
+echo "Class has test suite"
+fi
+echo "\t$deleted"
+
+echo "Added STL includes:"
+stl=""
+if [ $algo -eq 1 ]; then
+stl="<algorithm> $stl"
+fi
+if [ $exc -eq 1 ]; then
+stl="<exception> $stl"
+fi
+if [ $stdexc -eq 1 ]; then
+stl="<stdexcept> $stl"
+fi
+if [ $util -eq 1 ]; then
+stl="<util> $stl"
+fi
+echo "\t$stl"
