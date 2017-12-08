@@ -255,11 +255,11 @@ for opt in ${args[@]}; do
 	fi
 
 	if [ $vo -eq 1 ]; then
-		prot_vars="$opt"
+		prot_vars="$prot_vars $opt"
 		continue
 	fi
 	if [ $vi -eq 1 ]; then
-		priv_vars="$opt"
+		priv_vars="$priv_vars $opt"
 		continue
 	fi
 done
