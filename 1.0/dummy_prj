@@ -1,0 +1,26 @@
+# Project description
+desc=""
+ver=1.0
+maintainer_email=""
+maintainer_name=""
+dir=""
+lic=gplv2
+
+# Project dependencies to download
+# GIT_DEP=('')
+# WGET_DEP=('')
+
+# Project options
+type="cli" # May be cli/lib
+tabstop=4
+git_repo=""
+test_dir="tests"
+
+# Compiler options
+cross_compile=
+arch=x86_64
+cxx=g++
+linker_flags="-static-libgcc -static-libstdc++"
+cxx_flags="-O2 -Wall -pedantic -std=c++14 -D_GNU"
+inc_dirs="include"
+lib_dirs=""
