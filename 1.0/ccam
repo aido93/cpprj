@@ -1,6 +1,6 @@
 #!/bin/bash
 # Class method blank creator
-# Syntax ccam1 <class_name> [-iou] [-pfo] <method_name> <return_type> [-a <args>] [-t <template types>] [-nolog] [-algo] {-fit -fc -do -while -switch}
+# Syntax ccam1 <class_name> [-iou] [-pfo] <method_name> <return_type> [-a <args>] [-t <template types>] [-nolog] [-noexcept] [-algo] {-fit -fc -do -while -switch}
 # {} - arguments of options is the end of programmins structure
 # for example:
 # 1) -fc -fc i=0:10 j=100:-20:-2

@@ -1,11 +1,12 @@
 #!/bin/bash
 # Class blank creator
-# Syntax cclass1 <class_name> [-n <namespaces>][-t <types>][-u,-i,-vu<parent_classes>] [-pvd][-dd,-dm,-dc] [-vi/-vo][vars][-as,-ag] [-notest][-algo][-exc][-stdexc][-util] [-q] [-quinch <quoted includes list in header>][-binch <braced includes list in header>][-quincs <quoted includes list in src>][-bincs <braced includes list in src>]
+# Syntax cclass1 <class_name> [-n <namespaces>][-t <types>][-u,-i,-vu<parent_classes>] [-pvd][-dd,-dm,-dc] [-vi/-vo][vars][-as,-ag] [-notest][-algo][-exc][-stdexc][-util] [-q] [-quinch <quoted includes list in header>][-binch <braced includes list in header>][-quincs <quoted includes list in src>][-bincs <braced includes list in src>] [-c <constructor vars> -c]
 # -algo   - add STL algorithm include
 # -exc    - add STL exception include
 # -stdexc - add STL stdexcept include
 # -util   - add STL utility include
 # -q      - Q_OBJECT
+# -c      - add custom constructor. list of constructors must be ended with -c option too
 # STL types
 containers=("vector","list","map","queue","deque","string","array","set","stack","forward_list","unordered_set","unordered_map")
 memory=("auto_ptr","shared_ptr","weak_ptr","unique_ptr","auto_ptr_ref","default_delete",
@@ -54,6 +55,9 @@ priv_vars=""
 vo=0
 prot_vars=""
 
+constructor_flag=0
+declare -a constructors
+
 # include settings
 quinch_flag=0
 declare -a quinch
@@ -83,8 +87,10 @@ function zero_flags {
 	binch_flag=0
 	quincs_flag=0
 	bincs_flag=0
+	constructor_flag=0
 }
 class_name=${args[0]}
+tmp_constr=""
 for opt in ${args[@]}; do
 	if [ "$opt" == "-n" ]; then
 		zero_flags
@@ -207,6 +213,15 @@ for opt in ${args[@]}; do
 		bincs_flag=1
 		continue
 	fi
+	if [ "$opt" == "-c" ]; then 
+		zero_flags
+		constructor_flag=1
+		if [ -n "$tmp_constr" ]; then
+			constructors[${#constructors[*]}]="$tmp_constr"
+		fi
+		tmp_constr=""
+		continue
+	fi
 	
 	# Flags are parsed. Now we can determine their variables, names and types
 	if [ $namespace_flag -eq 1 ]; then
@@ -262,6 +277,11 @@ for opt in ${args[@]}; do
 		priv_vars="$priv_vars $opt"
 		continue
 	fi
+	if [ $constructor_flag -eq 1 ]; then
+		tmp_constr="$tmp_constr $opt"
+		continue
+	fi
+
 done
 
 echo "Debug: "
@@ -328,6 +348,9 @@ echo -e "\t$deleted"
 else
 echo -e "\tNo"
 fi
+echo "Custom constructors:"
+printf "\t$class_name(%s)\n" "${constructors[@]}"
+
 if [ $pvd -eq 1 ]; then
 echo "Added pure virtual destructor"
 fi
@@ -352,3 +375,4 @@ if [ $util -eq 1 ]; then
 stl="<util> $stl"
 fi
 echo -e "\t$stl"
+
