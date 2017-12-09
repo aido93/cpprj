@@ -1,4 +1,5 @@
 import date
+import argparse
 # move to cpp for finding private or protected vars
 from difflib import SequenceMatcher
 
@@ -264,4 +265,21 @@ def basic_class_content(class_name, dd=0, dc=0, dm=0, vd=0, custom=None):
 		ret.append(d1)
 	return ret
 
-
+def bundle( class_name, author, email,
+			namespaces_name=None,
+			template_types=None, class_parents=None,
+			dd=0, dc=0, dm=0, vd=0, custom=None,
+			private_vars=None,protected_vars=None, 
+			private_setters=False, private_getters=False, protected_setters=False, protected_getters=False,
+			public_methods=None,protected_methods=None,private_methods=None,
+			quinch=None, binch=None,
+			tabstop=4):
+	publics=basic_class_content(class_name, dd, dc,dm, vd, custom)
+	publics.extend(public_methods)
+	autodetected, blank=create_class(class_name,template_types, class_parents,
+				 private_vars,protected_vars, 
+				 private_setters, private_getters, protected_setters, protected_getters,
+				 publics,protected_methods,private_methods,
+				 tabstop)
+	out=header(class_name, author, email)+includes(quinch,autodetected,binch)+namespace(namespace_name, blank, tabstop)
+	return out
