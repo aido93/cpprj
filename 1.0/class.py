@@ -1,6 +1,5 @@
 import time
 import argparse
-# move to cpp for finding private or protected vars
 from difflib import SequenceMatcher
 
 std={
@@ -24,6 +23,24 @@ std={
 	'tuple'					: [ "tuple","tuple_size","tuple_element"],
 	'complex'				: [ "complex",]
 }
+
+pre_method_modifiers   = ['static', 'virtual']
+post_method_modifiers  = ['=0', '=delete', 'const', 'const =0', 'const =delete', 'noexcept', 'override', 'final']
+post_class_modifiers   = ['final', ]
+
+class arg:
+	type=''
+	name=''
+	value=None
+
+class method:
+	template_args=[]
+	pre_modifier=None
+	return_type=None
+	name=''
+	args=[]
+	post_modifier=None
+	body=None
 
 def header(class_name, author, email):
 	return """/**
@@ -58,35 +75,101 @@ namespace """+namespace_name+"""
 {
 """+ts+body.replace('\n',ts)+"\n}; //"+namespace.upper()+" namespace\n"
 
-def add_methods(methods, ts):
-	ret=""
+def add_methods(class_name, methods, ts):
+	hpp=""
 	for p in methods:
-		ret=ret+ts*2+"/**\n"
-		ret=ret+ts*2+" * \\brief \n"
-		ret=ret+ts*2+" * \\details \n"
-		for v in p["vars"]:
-			ret=ret+ts*2+" * \\param [in] "+v["name"]+" - \n"
-		if not p['type']:
-			ret=ret+ts*2+" **/\n"
-		elif p['type']=='void':
-			ret=ret+ts*2+" * \\return None \n */\n"
+		# Create comments
+		hpp=hpp+ts*2+"/**\n"
+		hpp=hpp+ts*2+" * \\brief \n"
+		hpp=hpp+ts*2+" * \\details \n"
+		for v in p.template_args:
+			hpp=hpp+ts*2+" * \\param [in] "+v+" - \n"
+		for v in p.args:
+			hpp=hpp+ts*2+" * \\param [in] "+v.name+" - \n"
+		if not p.type:
+			hpp=hpp+ts*2+" **/\n"
+		elif p.type=='void':
+			hpp=hpp+ts*2+" * \\return None \n **/\n"
 		else
-			ret=ret+ts*2+" * \\return - \n */\n"
-		
-		ret=ret+ts*2
-		if p['type']:
-			ret=ret+p['type']+' '
-		ret=ret+p['name']+" ("
+			hpp=hpp+ts*2+" * \\return - \n **/\n"
+		# Create method
+		hpp=hpp+ts*2
+		if p.template_args:
+			hpp=hpp+"template <"
+			i=1
+			for t in p.template_args:
+				hpp=hpp+t
+				if i<len(p.template_args):
+					hpp=hpp+', '
+			hpp=hpp+">\n"
+		if p.pre_modifier:
+			if p.pre_modifier in pre_method_modifiers:
+				if p.name==class_name:
+					raise Exception("constructor cannot have pre-modifiers")
+				else:
+					hpp=hpp+p.pre_modifier+' '
+			else:
+				raise Exception("Undefined pre-modifier: "+str(p.pre_modifier))
+		if p.type:
+			if p.name==class_name:
+				raise Exception("constructor cannot have type")
+			hpp=hpp+p.type+' '
+		hpp=hpp+p.name+' ('
 		i=1
-		for v in p["vars"]:
-			ret=ret+v['type']+" "+v['name']
-			if i<len(p["vars"]):
-				ret=ret+', '
-		ret=ret+")"
-		if p["modifier"]:
-			ret=ret+" "+p["modifier"]
-		ret=ret+";\n"
-	return ret
+		for v in p.args:
+			hpp=hpp+v.type+" "+v.name
+			if i<len(p.args):
+				hpp=hpp+', '
+		hpp=hpp+")"
+		if p.post_modifier:
+			if p.post_modifier in post_method_modifiers:
+				if p.name==class_name and p.post_modifier!="=delete":
+					raise Exception("constructor cannot be "+str(post_modifier))
+				else:
+					hpp=hpp+" "+p.post_modifier
+			else:
+				raise Exception("Undefined post-modifier: "+str(p.pre_modifier))
+		hpp=hpp+";\n"
+	# create src
+	cpp=""
+	cpp_template=""
+	for p in methods:
+		if (p.post_modifier and p.post_modifier != "=delete" and p.post_modifier != "=0") or not p.post_modifier:
+			is_template=False
+			if p.template_args:
+				is_template=True
+				cpp_template=cpp_template+"template <"
+				i=1
+				for t in p.template_args:
+					cpp_template=cpp_template+t
+					if i<len(p.template_args):
+						cpp_template=cpp_template+', '
+				cpp_template=cpp_template+">\n"
+			if not is_template:
+				if p.type:
+					cpp=cpp+p.type+' '
+				cpp=cpp+class_name+"::"+p.name+' ('
+				for v in p.args:
+					cpp=cpp+v.type+" "+v.name
+					if i<len(p.args):
+						cpp=cpp+', '
+				cpp=cpp+")"
+				if p.post_modifier:
+					cpp=cpp+" "+p.post_modifier
+				cpp=cpp+"\n{"+ts+p.body+"\n}\n"
+			else:
+				if p.type:
+					cpp_template=cpp_template+p.type+' '
+				cpp_template=cpp_template+class_name+"::"+p.name+' ('
+				for v in p.args:
+					cpp_template=cpp_template+v.type+" "+v.name
+					if i<len(p.args):
+						cpp_template=cpp_template+', '
+				cpp_template=cpp_template+")"
+				if p.post_modifier:
+					cpp_template=cpp_template+" "+p.post_modifier
+				cpp_template=cpp_template+"\n{"+ts+p.body+"\n}\n"
+	return (hpp, cpp, cpp_template)
 
 def create_class(class_name,template_types=None, class_parents=None,
 				 private_vars=None,protected_vars=None, 
