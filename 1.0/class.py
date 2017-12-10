@@ -1,4 +1,4 @@
-import date
+import time
 import argparse
 # move to cpp for finding private or protected vars
 from difflib import SequenceMatcher
@@ -30,18 +30,21 @@ def header(class_name, author, email):
  * Description: Interface to the """+class_name+"""-class
  * Todo: 
  * Author: """+author+"<"+email+">"+"""
- * Date:   """+date.date()+"""
+ * Date:   """+time.strftime('%d.%m.%Y')+"""
  * */
 #pragma once\n"""
 
-def includes(quinch, autodetected, binch):
+def includes(quinc, autodetected, binc):
 	ret=""
-	for name in quinch:
-		ret=ret+'#include "'+name+'"\n'
-	for name in autodetected:
-		ret=ret+'#include <'+name+'>\n'
-	for name in binch:
-		ret=ret+'#include <'+name+'>\n'
+	if isinstance(quinc,list):
+		for name in quinc:
+			ret=ret+'#include "'+name+'"\n'
+	if isinstance(autodetected, list):
+		for name in autodetected:
+			ret=ret+'#include <'+name+'>\n'
+	if isinstance(binc, list):
+		for name in binc:
+			ret=ret+'#include <'+name+'>\n'
 	ret=ret+"// Common used types - uint32_t, etc.\n"
 	ret=ret+"#include <stdint.h>\n"
 	return ret
@@ -89,7 +92,7 @@ def create_class(class_name,template_types=None, class_parents=None,
 				 private_vars=None,protected_vars=None, 
 				 private_setters=False, private_getters=False, protected_setters=False, protected_getters=False,
 				 public_methods=None,protected_methods=None,private_methods=None,
-				 tabstop=4):
+				 tabstop=4,snake_case=True):
 	autodetected=[]
 	for v in private_vars:
 		for inc, t in stl:
@@ -143,32 +146,40 @@ def create_class(class_name,template_types=None, class_parents=None,
 	sgetters=[]
 	if protected_vars:
 		for v in protected_vars:
+			if not snake_case:
+				var_name=v["name"].capitalize()
+			else
+				var_name=v["name"]
 			if protected_getters:
 				sgetters.append({ 	"type" : v['type'],
-									"name" : "get_"+v['name'],
+									"name" : "get_"+var_name,
 									"vars" : None,
 									"modifier": "const"})
 			if protected_setters:
 				sgetters.append({ 	"type" : 'void',
-									"name" : "set_"+v['name'],
+									"name" : "set_"+var_name,
 									"vars" : {
 												'type': "const "+v['type']+'&',
-												'name': '_'+var['name']
+												'name': '_'+var_name
 											 },
 									"modifier": None})
 	if private_vars:
 		for v in private_vars:
+			if not snake_case:
+				var_name=v["name"].capitalize()
+			else
+				var_name=v["name"]
 			if private_getters:
 				sgetters.append({ 	"type" : v['type'],
-									"name" : "get_"+v['name'],
+									"name" : "get_"+var_name,
 									"vars" : None,
 									"modifier": "const"})
 			if private_setters:
 				sgetters.append({ 	"type" : 'void',
-									"name" : "set_"+v['name'],
+									"name" : "set_"+var_name,
 									"vars" : {
 												'type': "const "+v['type']+'&',
-												'name': '_'+var['name']
+												'name': '_'+var_name
 											 },
 									"modifier": None})
 	ret=ret+add_methods(sgetters, ts)
@@ -272,14 +283,21 @@ def bundle( class_name, author, email,
 			private_vars=None,protected_vars=None, 
 			private_setters=False, private_getters=False, protected_setters=False, protected_getters=False,
 			public_methods=None,protected_methods=None,private_methods=None,
-			quinch=None, binch=None,
-			tabstop=4):
+			quinch=None, binch=None, quincs=None, bincs=None,
+			tabstop=4, snake_case=True):
 	publics=basic_class_content(class_name, dd, dc,dm, vd, custom)
 	publics.extend(public_methods)
-	autodetected, blank=create_class(class_name,template_types, class_parents,
+	header_autodetected, blank=create_class(class_name,template_types, class_parents,
 				 private_vars,protected_vars, 
 				 private_setters, private_getters, protected_setters, protected_getters,
 				 publics,protected_methods,private_methods,
-				 tabstop)
-	out=header(class_name, author, email)+includes(quinch,autodetected,binch)+namespace(namespace_name, blank, tabstop)
-	return out
+				 tabstop,snake_case)
+	src_autodetected, impl=create_impl(class_name,template_types, class_parents,
+				 private_vars,protected_vars, 
+				 private_setters, private_getters, protected_setters, protected_getters,
+				 publics,protected_methods,private_methods,
+				 tabstop,snake_case)
+	hpp=header(class_name, author, email)+includes(quinch,header_autodetected,binch)+namespace(namespace_name, blank, tabstop)
+	cpp=header(class_name, author, email)+includes(quincs,src_autodetected,   bincs)+namespace(namespace_name, impl, tabstop)
+	test=header(class_name, author, email)+gen_test(class_name)
+	return (hpp, cpp)
