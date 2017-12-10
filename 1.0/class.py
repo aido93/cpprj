@@ -1,5 +1,5 @@
 import time
-import argparse
+from prj_config import config
 from difflib import SequenceMatcher
 
 std={
@@ -376,3 +376,12 @@ def bundle( class_name, author, email,
 	cpp=header(class_name, author, email)+includes(quincs,src_autodetected,   bincs)+namespace(namespace_name, impl, tabstop)
 	test=header(class_name, author, email)+gen_test(class_name)
 	return (hpp, cpp)
+
+# TODO: Add setters and getters with bodies and descriptions
+# TODO: Add implementation of constructors with autodetection of private and protected variables
+# TODO: Add conversion snake to camel and reverse
+# TODO: Change maintainer to somebody from developers
+# TODO: Add simple variable checking to method body
+# TODO: Add loggers to methods
+# TODO: Add automatic test creation
+# TODO: Add common programming patterns

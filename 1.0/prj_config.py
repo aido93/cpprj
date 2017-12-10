@@ -37,7 +37,8 @@ config=
 
     # Project dependencies to download
     "dependencies"   :  {
-                            "git":  [],
+                            "git":  ['https://github.com/gabime/spdlog', # For logging
+									],
                             "svn":  [],
                             "wget": []
                         },
