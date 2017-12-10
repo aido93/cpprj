@@ -25,11 +25,11 @@ std={
 }
 
 pre_method_modifiers   = ['static', 'virtual']
-post_method_modifiers  = ['=0', '=delete', 'const', 'const =0', 'const =delete', 'noexcept', 'override', 'final']
+post_method_modifiers  = ['=0', '=delete', 'const', 'const =0', 'const =delete', 'volatile', 'const volatile', 'noexcept', 'override', 'final']
 post_class_modifiers   = ['final', ]
 
 class arg:
-	type=''
+	type=None
 	name=''
 	value=None
 
@@ -83,9 +83,9 @@ def add_methods(class_name, methods, ts):
 		hpp=hpp+ts*2+" * \\brief \n"
 		hpp=hpp+ts*2+" * \\details \n"
 		for v in p.template_args:
-			hpp=hpp+ts*2+" * \\param [in] "+v+" - \n"
+			hpp=hpp+ts*2+" * \\param [in] "+v.name+" - "+". Default value is "+v.value+"\n"
 		for v in p.args:
-			hpp=hpp+ts*2+" * \\param [in] "+v.name+" - \n"
+			hpp=hpp+ts*2+" * \\param [in] "+v.name+" - "+". Default value is "+v.value+"\n"
 		if not p.type:
 			hpp=hpp+ts*2+" **/\n"
 		elif p.type=='void':
@@ -98,7 +98,7 @@ def add_methods(class_name, methods, ts):
 			hpp=hpp+"template <"
 			i=1
 			for t in p.template_args:
-				hpp=hpp+t
+				hpp=hpp+'class '+t
 				if i<len(p.template_args):
 					hpp=hpp+', '
 			hpp=hpp+">\n"
@@ -118,6 +118,8 @@ def add_methods(class_name, methods, ts):
 		i=1
 		for v in p.args:
 			hpp=hpp+v.type+" "+v.name
+			if v.value and v.value!='':
+				hpp=hpp+"="+v.value
 			if i<len(p.args):
 				hpp=hpp+', '
 		hpp=hpp+")"
@@ -172,36 +174,46 @@ def add_methods(class_name, methods, ts):
 	return (hpp, cpp, cpp_template)
 
 def create_class(class_name,template_types=None, class_parents=None,
-				 private_vars=None,protected_vars=None, 
+				 private_vars=None,protected_vars=None, deps_includes=None,
 				 private_setters=False, private_getters=False, protected_setters=False, protected_getters=False,
 				 public_methods=None,protected_methods=None,private_methods=None,
 				 tabstop=4,snake_case=True):
 	autodetected=[]
 	for v in private_vars:
 		for inc, t in stl:
-			if any("std::"+substring in v['type'] for substring in t):
+			if any("std::"+substring in v.type for substring in t):
 				if inc not in autodetected:
 					autodetected.append(inc)
 		else:
-			if v['type'][0]=='Q':
-				autodetected.append(v['type'])
+			if v.type[0]=='Q':
+				autodetected.append(v.type)
+			elif isinstance(deps_includes, list):
+				for dep in deps_includes:
+				    for file in os.walkdir(dep):
+						if "class "+v.type in open(file).read():
+							autodetected.append(file)
 	for v in protected_vars:
 		for inc, t in stl:
-			if any("std::"+substring in v['type'] for substring in t):
+			if any("std::"+substring in v.type for substring in t):
 				if inc not in autodetected:
 					autodetected.append(inc)
 		else:
 			if v['type'][0]=='Q':
-				autodetected.append(v['type'])
+				autodetected.append(v.type)
+			elif isinstance(deps_includes, list):
+				for dep in deps_includes:
+				    for file in os.walkdir(dep):
+						if "class "+v.type in open(file).read():
+							autodetected.append(file)
 	for func in public_methods:
-		for v in func["vars"]:
+		for v in func.args:
 			for inc, t in stl:
-				if any("std::"+substring in v['type'] for substring in t):
+				if any("std::"+substring in v.type for substring in t):
 					if inc not in autodetected:
 						autodetected.append(inc)
 			else:
-				if v['type'][0]=='Q':
-					autodetected.append(v['type'])
+				if v.type[0]=='Q':
+					autodetected.append(v.type)
 	ts=' '*tabstop
 	ret="""/**
  * \\brief
@@ -230,11 +242,11 @@ def create_class(class_name,template_types=None, class_parents=None,
 	if protected_vars:
 		for v in protected_vars:
 			if not snake_case:
-				var_name=v["name"].capitalize()
+				var_name=v.name.capitalize()
 			else
-				var_name=v["name"]
+				var_name=v.name
 			if protected_getters:
-				sgetters.append({ 	"type" : v['type'],
+				sgetters.append({ 	"type" : v.type,
 									"name" : "get_"+var_name,
 									"vars" : None,
 									"modifier": "const"})
@@ -242,18 +254,18 @@ def create_class(class_name,template_types=None, class_parents=None,
 				sgetters.append({ 	"type" : 'void',
 									"name" : "set_"+var_name,
 									"vars" : {
-												'type': "const "+v['type']+'&',
+												'type': "const "+v.type+'&',
 												'name': '_'+var_name
 											 },
 									"modifier": None})
 	if private_vars:
 		for v in private_vars:
 			if not snake_case:
-				var_name=v["name"].capitalize()
+				var_name=v.name.capitalize()
 			else
-				var_name=v["name"]
+				var_name=v.name
 			if private_getters:
-				sgetters.append({ 	"type" : v['type'],
+				sgetters.append({ 	"type" : v.type,
 									"name" : "get_"+var_name,
 									"vars" : None,
 									"modifier": "const"})
@@ -261,7 +273,7 @@ def create_class(class_name,template_types=None, class_parents=None,
 				sgetters.append({ 	"type" : 'void',
 									"name" : "set_"+var_name,
 									"vars" : {
-												'type': "const "+v['type']+'&',
+												'type': "const "+v.type+'&',
 												'name': '_'+var_name
 											 },
 									"modifier": None})
@@ -271,14 +283,14 @@ def create_class(class_name,template_types=None, class_parents=None,
 		ret=ret+'\n'+ts+'protected:'
 	if protected_vars:
 		for v in protected_vars:
-			ret=ret+ts*2+v['type']+' '+v['name']+'; //!< \n'
+			ret=ret+ts*2+v.type+' '+v.name+'; //!< \n'
 	if protected_methods:
 		ret=ret+add_methods(protected_methods, ts)
 		ret=ret+'\n'+ts*2
 	ret=ret+'\n'+ts+'private:\n'
 	if private_vars:
 		for v in private_vars:
-			ret=ret+ts*2+v['type']+' '+v['name']+'; //!< \n'
+			ret=ret+ts*2+v.type+' '+v.name+'; //!< \n'
 	if private_methods:
 		ret=ret+add_methods(private_methods, ts)
 		ret=ret+'\n'+ts*2
@@ -290,72 +302,52 @@ def create_class(class_name,template_types=None, class_parents=None,
 # vd=2 - pure virtual
 def basic_class_content(class_name, dd=0, dc=0, dm=0, vd=0, custom=None):
 	ret=[]
-	dummy={ "type" : None,
-			"name" : class_name,
-			"vars" : None,
-			"modifier": None}
+
+	dummy=method(name=class_name)
 	if dd==0:
 		ret.append(dummy)
 	else:
 		d1=dummy
-		d1["modifier"]="= delete"
+		d1.post_modifier="=delete"
 		ret.append(d1)
 	if dc==0:
-		ret.append({"type" : class_name,
-					"name" : "operator=",
-					"vars" : {
-						"type" : "const "+class_name+"&",
-						"name" : None
-						},
-					"modifier": None
-					})
+		op=method(return_type=class_name, name="operator=", args=[arg(type="const "+class_name+"&", None)])
+		ret.append(op)
 		d1=dummy
-		d1["vars"]={"type" : "const "+class_name+"&",
-					"name" : None}
+		d1.args=method(args=[arg("const "+class_name+"&")])
 		ret.append(d1)
 	else:
 		d1=dummy
-		d1["vars"]={"type" : "const "+class_name+"&",
-					"name" : None}
-		d1["modifier"]="=delete"
+		d1.args=method(args=[arg("const "+class_name+"&")], post_modifier="=delete")
 		ret.append(d1)
 	if dm==0:
-		ret.append({"type" : class_name+"&",
-					"name" : "operator=",
-					"vars" : {
-						"type" : "const "+class_name+"&&",
-						"name" : None
-						},
-					"modifier": None
-					})
+		op=method(return_type=class_name+'&', name="operator=", args=[arg(type="const "+class_name+"&&", None)])
+		ret.append(op)
 		d1=dummy
-		d1["vars"]={"type" : "const "+class_name+"&&",
-					"name" : None}
+		d1.args=method(args=[arg("const "+class_name+"&&")])
 		ret.append(d1)
 	else:
 		d1=dummy
-		d1["vars"]={"type" : "const "+class_name+"&&",
-					"name" : None}
-		d1["modifier"]="=delete"
+		d1.args=method(args=[arg("const "+class_name+"&&")], post_modifier="=delete")
 		ret.append(d1)
 	if custom:
 		for constructor_params in custom:
 			d1=dummy
-			d1["vars"]=constructor_params
+			d1.args=constructor_params
 			ret.append(d1)
 	if vd==0:
 		d1=dummy
-		d1["name"]="~"+class_name
+		d1.name="~"+class_name
 		ret.append(d1)
 	elif vd==1:
 		d1=dummy
-		d1["name"]="~"+class_name
+		d1.name="~"+class_name
 		ret.append(d1)
 	elif vd==2:
 		d1=dummy
-		d1["name"]="~"+class_name
-		d1["type"]="virtual"
-		d1["modifier"]="=0"
+		d1.name="~"+class_name
+		d1.type="virtual"
+		d1.post_modifier="=0"
 		ret.append(d1)
 	return ret
 
