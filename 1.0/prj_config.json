@@ -1,6 +1,4 @@
-config=
 {
-    # Project description
     "desc"             : "",
     "version"          : "1.0.0.Alpha",
     "maintainer"       : "",
@@ -19,38 +17,35 @@ config=
                 {
                     "name"  : "",
                     "email" : ""
-                },
+                }
             ],
             "testers"     : [
                 {
                     "name"  : "",
                     "email" : ""
-                },
+                }
             ],
             "designers"   : [
                 {
                     "name"  : "",
                     "email" : ""
-                },
-            ],
-        }
+                }
+            ]
+        },
 
-    # Project dependencies to download
     "dependencies"   :  {
-                            "git":  ['https://github.com/gabime/spdlog', # For logging
+                            "git":  ["https://github.com/gabime/spdlog"
 									],
                             "svn":  [],
                             "wget": []
                         },
 
-    # Project options
-    "type"           : "lib", # May be cli/lib/qtapp
+    "type"           : "lib",
     "tabstop"        : 4,
     "git_repo"       : "",
     "test_dir"       : "tests",
-    "snake_case"     : True,
+    "snake_case"     : true,
 
-    # Compiler options
     "builds"         :
     {
         "common":
@@ -58,7 +53,7 @@ config=
             "cxx"           : "g++",
             "cc"            : "gcc",
             "cxx_flags"     : "-O2 -Wall -pedantic -std=c++14",
-            "inc_dirs"      : "include",
+            "inc_dirs"      : "include"
         },
         "qmake"          :
         {
@@ -126,6 +121,6 @@ config=
             "linker_flags"  : "-static-libgcc -static-libstdc++",
             "lib_dirs"      : "",
             "out_dir"       : ""
-        },
+        }
     }
 }

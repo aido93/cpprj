@@ -1,5 +1,6 @@
 import time
-from prj_config import config
+import re
+import json
 from difflib import SequenceMatcher
 
 std={
@@ -24,8 +25,9 @@ std={
 	'complex'				: [ "complex",]
 }
 
-pre_method_modifiers   = ['static', 'virtual']
-post_method_modifiers  = ['=0', '=delete', 'const', 'const =0', 'const =delete', 'volatile', 'const volatile', 'noexcept', 'override', 'final']
+pre_method_modifiers   = ['static', 'virtual', 'extern', 'friend']
+post_method_modifiers  = [	'=0', '=delete', 'const', 'const =0', 'const =delete', 'volatile', 
+							'const volatile', 'noexcept', 'override', 'final', '&', '&&']
 post_class_modifiers   = ['final', ]
 
 class arg:
@@ -41,6 +43,17 @@ class method:
 	args=[]
 	post_modifier=None
 	body=None
+	hint=''
+
+def to_camel(snake_str):
+    components = snake_str.split('_')
+	return components[0] + "".join(x.title() for x in components[1:])
+
+first_cap_re = re.compile('(.)([A-Z][a-z]+)')
+all_cap_re = re.compile('([a-z0-9])([A-Z])')
+def to_snake(name):
+    s1 = first_cap_re.sub(r'\1_\2', name)
+	return all_cap_re.sub(r'\1_\2', s1).lower()
 
 def header(class_name, author, email):
 	return """/**
@@ -75,23 +88,44 @@ namespace """+namespace_name+"""
 {
 """+ts+body.replace('\n',ts)+"\n}; //"+namespace.upper()+" namespace\n"
 
-def add_methods(class_name, methods, ts):
+def add_methods(class_name, methods, ts, class_fields):
 	hpp=""
 	for p in methods:
 		# Create comments
 		hpp=hpp+ts*2+"/**\n"
-		hpp=hpp+ts*2+" * \\brief \n"
-		hpp=hpp+ts*2+" * \\details \n"
-		for v in p.template_args:
-			hpp=hpp+ts*2+" * \\param [in] "+v.name+" - "+". Default value is "+v.value+"\n"
-		for v in p.args:
-			hpp=hpp+ts*2+" * \\param [in] "+v.name+" - "+". Default value is "+v.value+"\n"
-		if not p.type:
-			hpp=hpp+ts*2+" **/\n"
-		elif p.type=='void':
-			hpp=hpp+ts*2+" * \\return None \n **/\n"
-		else
-			hpp=hpp+ts*2+" * \\return - \n **/\n"
+		if p.hint=='setter':
+			hpp=hpp+ts*2+" * \\brief Setter-method for "+p.args[0].name+" class field \n"
+			hpp=hpp+ts*2+" * \\return None*/\n"
+		elif p.hint=='getter':
+			hpp=hpp+ts*2+" * \\brief Getter-method for "+p.args[0].name+" class field \n"
+			hpp=hpp+ts*2+" * \\return Value of the "+p.args[0].name+"* class field*/\n"
+		elif p.hint=='copy':
+			hpp=hpp+ts*2+" * \\brief Copy constructor"
+			if p.post_modifier=='=delete':
+				hpp=hpp+" is deleted because \n"
+			else:
+				hpp=hpp+'\n'
+			hpp=hpp+ts*2+" * \\return Copy of object**/\n"
+		elif p.hint=='move':
+			hpp=hpp+ts*2+" * \\brief Move constructor"
+			if p.post_modifier=='=delete':
+				hpp=hpp+" is deleted because \n"
+			else:
+				hpp=hpp+'\n'
+			hpp=hpp+ts*2+" * \\return Rvalue-reference to the object**/\n"
+		else:
+			hpp=hpp+ts*2+" * \\brief \n"
+			hpp=hpp+ts*2+" * \\details \n"
+			for v in p.template_args:
+				hpp=hpp+ts*2+" * \\param [in] "+v.name+" - "+". Default value is "+v.value+"\n"
+			for v in p.args:
+				hpp=hpp+ts*2+" * \\param [in] "+v.name+" - "+". Default value is "+v.value+"\n"
+			if not p.type:
+				hpp=hpp+ts*2+" **/\n"
+			elif p.type=='void':
+				hpp=hpp+ts*2+" * \\return None \n **/\n"
+			else:
+				hpp=hpp+ts*2+" * \\return  \n **/\n"
 		# Create method
 		hpp=hpp+ts*2
 		if p.template_args:
@@ -135,6 +169,8 @@ def add_methods(class_name, methods, ts):
 	# create src
 	cpp=""
 	cpp_template=""
+	def similar(a, b):
+	    return SequenceMatcher(None, a, b).ratio()
 	for p in methods:
 		if (p.post_modifier and p.post_modifier != "=delete" and p.post_modifier != "=0") or not p.post_modifier:
 			is_template=False
@@ -151,26 +187,50 @@ def add_methods(class_name, methods, ts):
 				if p.type:
 					cpp=cpp+p.type+' '
 				cpp=cpp+class_name+"::"+p.name+' ('
+				i=1
 				for v in p.args:
-					cpp=cpp+v.type+" "+v.name
+					if v.name:
+						cpp=cpp+v.type+" "+v.name
+					else:
+						cpp=cpp+v.type+" x"
 					if i<len(p.args):
 						cpp=cpp+', '
+						
 				cpp=cpp+")"
 				if p.post_modifier:
 					cpp=cpp+" "+p.post_modifier
-				cpp=cpp+"\n{"+ts+p.body+"\n}\n"
+				if p.type==None and p.hint!='move' and p.hint!='copy': # Custom constructor
+					cpp=cpp+': \n'+ts
+					init_list=[]
+					for constr_arg in p.args:
+						for var in class_fields:
+							if similar(constr_arg, var)>=0.8:
+								init_list.append(prot+'('+constr_arg+')')
+					cpp=cpp+('\n'+ts).join(init_list)
+				if p.body:
+					cpp=cpp+"\n{"+ts+p.body+"\n}\n"
+				elif p.type:
+					cpp=cpp+'\n{'+ts+p.type+' ret;\n'+ts+'\n'+ts+'return ret;\n}\n'
+				
 			else:
 				if p.type:
 					cpp_template=cpp_template+p.type+' '
 				cpp_template=cpp_template+class_name+"::"+p.name+' ('
+				i=1
 				for v in p.args:
-					cpp_template=cpp_template+v.type+" "+v.name
+					if v.name:
+						cpp_template=cpp_template+v.type+" "+v.name
+					else:
+						cpp_template=cpp_template+v.type+" x"
 					if i<len(p.args):
 						cpp_template=cpp_template+', '
 				cpp_template=cpp_template+")"
 				if p.post_modifier:
 					cpp_template=cpp_template+" "+p.post_modifier
-				cpp_template=cpp_template+"\n{"+ts+p.body+"\n}\n"
+				if p.body:
+					cpp_template=cpp_template+"\n{"+ts+p.body+"\n}\n"
+				elif p.type:
+					cpp_template=cpp_template+'\n{'+ts+p.type+' ret;\n'+ts+'\n'+ts+'return ret;\n}\n'
 	return (hpp, cpp, cpp_template)
 
 def create_class(class_name,template_types=None, class_parents=None,
@@ -185,7 +245,7 @@ def create_class(class_name,template_types=None, class_parents=None,
 				if inc not in autodetected:
 					autodetected.append(inc)
 		else:
-			if v.type[0]=='Q':
+			if v.type[0]=='Q' and len(v.type)!=1:
 				autodetected.append(v.type)
 			elif isinstance(deps_includes, list):
 				for dep in deps_includes:
@@ -198,7 +258,7 @@ def create_class(class_name,template_types=None, class_parents=None,
 				if inc not in autodetected:
 					autodetected.append(inc)
 		else:
-			if v['type'][0]=='Q':
+			if v.type[0]=='Q' and len(v.type)!=1:
 				autodetected.append(v.type)
 			elif isinstance(deps_includes, list):
 				for dep in deps_includes:
@@ -242,41 +302,49 @@ def create_class(class_name,template_types=None, class_parents=None,
 	if protected_vars:
 		for v in protected_vars:
 			if not snake_case:
-				var_name=v.name.capitalize()
-			else
-				var_name=v.name
+				setter=to_camel("set_"+v.name)
+				getter=to_camel("get_"+v.name)
+			else:
+				setter=to_snake("set_"+v.name)
+				getter=to_snake("get_"+v.name)
 			if protected_getters:
-				sgetters.append({ 	"type" : v.type,
-									"name" : "get_"+var_name,
-									"vars" : None,
-									"modifier": "const"})
+				sgetters.append(method(	type=v.type,
+										name=getter,
+										args=None,
+										post_modifier="const",
+										body="return "+v.name+";",
+										hint='getter'))
 			if protected_setters:
-				sgetters.append({ 	"type" : 'void',
-									"name" : "set_"+var_name,
-									"vars" : {
-												'type': "const "+v.type+'&',
-												'name': '_'+var_name
-											 },
-									"modifier": None})
+				args=[arg(type="const "+v.type+'&', name='_'+v.name), ]
+				sgetters.append(method(	type='void',
+										name=setter,
+										args=args,
+										post_modifier=None,
+										body=v.name+" = _"+v.name+";",
+										hint='setter'))
 	if private_vars:
 		for v in private_vars:
 			if not snake_case:
-				var_name=v.name.capitalize()
-			else
-				var_name=v.name
+				setter=to_camel("set_"+v.name)
+				getter=to_camel("get_"+v.name)
+			else:
+				setter=to_snake("set_"+v.name)
+				getter=to_snake("get_"+v.name)
 			if private_getters:
-				sgetters.append({ 	"type" : v.type,
-									"name" : "get_"+var_name,
-									"vars" : None,
-									"modifier": "const"})
+				sgetters.append(method(	type=v.type,
+										name=getter,
+										args=None,
+										post_modifier="const",
+										body="return "+v.name+";",
+										hint='getter'))
 			if private_setters:
-				sgetters.append({ 	"type" : 'void',
-									"name" : "set_"+var_name,
-									"vars" : {
-												'type': "const "+v.type+'&',
-												'name': '_'+var_name
-											 },
-									"modifier": None})
+				args=[arg(type="const "+v.type+'&', name='_'+var_name),]
+				sgetters.append(method(	type='void',
+										name=setter,
+										args=args,
+										post_modifier=None,
+										body=v.name+" = _"+v.name+";",
+										hint='setter'))
 	ret=ret+add_methods(sgetters, ts)
 	ret=ret+'\n'+ts*2
 	if protected_vars or protected_methods:
@@ -300,36 +368,45 @@ def create_class(class_name,template_types=None, class_parents=None,
 # vd=0 - not virtual
 # vd=1 - virtual
 # vd=2 - pure virtual
-def basic_class_content(class_name, dd=0, dc=0, dm=0, vd=0, custom=None):
+def basic_class_content(class_name, dd=False, dc=False, dm=False, vd=0, custom=None):
 	ret=[]
 
 	dummy=method(name=class_name)
-	if dd==0:
-		ret.append(dummy)
+	if not dd:
+		d1=dummy
+		d1.post_modifier="noexcept"
+		ret.append(d1)
 	else:
 		d1=dummy
 		d1.post_modifier="=delete"
 		ret.append(d1)
-	if dc==0:
-		op=method(return_type=class_name, name="operator=", args=[arg(type="const "+class_name+"&", None)])
+
+	if not dc:
+		op=method(return_type=class_name, name="operator=", args=[arg(type="const "+class_name+"&")])
 		ret.append(op)
 		d1=dummy
+		d1.hint='copy'
 		d1.args=method(args=[arg("const "+class_name+"&")])
 		ret.append(d1)
 	else:
 		d1=dummy
+		d1.hint='copy'
 		d1.args=method(args=[arg("const "+class_name+"&")], post_modifier="=delete")
 		ret.append(d1)
-	if dm==0:
-		op=method(return_type=class_name+'&', name="operator=", args=[arg(type="const "+class_name+"&&", None)])
+
+	if not dm:
+		op=method(return_type=class_name+'&', name="operator=", args=[arg(type="const "+class_name+"&&")])
 		ret.append(op)
 		d1=dummy
+		d1.hint='move'
 		d1.args=method(args=[arg("const "+class_name+"&&")])
 		ret.append(d1)
 	else:
 		d1=dummy
+		d1.hint='move'
 		d1.args=method(args=[arg("const "+class_name+"&&")], post_modifier="=delete")
 		ret.append(d1)
+	
 	if custom:
 		for constructor_params in custom:
 			d1=dummy
@@ -377,9 +454,6 @@ def bundle( class_name, author, email,
 	test=header(class_name, author, email)+gen_test(class_name)
 	return (hpp, cpp)
 
-# TODO: Add setters and getters with bodies and descriptions
-# TODO: Add implementation of constructors with autodetection of private and protected variables
-# TODO: Add conversion snake to camel and reverse
 # TODO: Change maintainer to somebody from developers
 # TODO: Add simple variable checking to method body
 # TODO: Add loggers to methods
