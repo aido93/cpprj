@@ -207,11 +207,18 @@ def add_methods(class_name, methods, ts, class_fields):
 							if similar(constr_arg, var)>=0.8:
 								init_list.append(prot+'('+constr_arg+')')
 					cpp=cpp+('\n'+ts).join(init_list)
+				cpp=cpp+"\n{"+ts
 				if p.body:
-					cpp=cpp+"\n{"+ts+p.body+"\n}\n"
-				elif p.type:
-					cpp=cpp+'\n{'+ts+p.type+' ret;\n'+ts+'\n'+ts+'return ret;\n}\n'
-				
+					cpp=cpp+p.body
+				elif p.type and p.hint!='move' and p.hint!='copy':
+					cpp=cpp+p.type+' ret;\n'+ts+'\n'+ts+'return ret;'
+				elif p.type and p.hint=='copy':
+					cpp=cpp+'if (this != &'+p.args[0].name+')\n'+ts+'{'
+					cpp=cpp+ts*2
+					cpp=cpp+ts+'}'
+					cpp=cpp+'return *this;'
+				cpp=cpp+"\n}\n"
+
 			else:
 				if p.type:
 					cpp_template=cpp_template+p.type+' '
@@ -374,6 +381,7 @@ def basic_class_content(class_name, dd=False, dc=False, dm=False, vd=0, custom=N
 	dummy=method(name=class_name)
 	if not dd:
 		d1=dummy
+		op.hint='default'
 		d1.post_modifier="noexcept"
 		ret.append(d1)
 	else:
@@ -383,6 +391,7 @@ def basic_class_content(class_name, dd=False, dc=False, dm=False, vd=0, custom=N
 
 	if not dc:
 		op=method(return_type=class_name, name="operator=", args=[arg(type="const "+class_name+"&")])
+		op.hint='copy'
 		ret.append(op)
 		d1=dummy
 		d1.hint='copy'
@@ -396,6 +405,7 @@ def basic_class_content(class_name, dd=False, dc=False, dm=False, vd=0, custom=N
 
 	if not dm:
 		op=method(return_type=class_name+'&', name="operator=", args=[arg(type="const "+class_name+"&&")])
+		op.hint='move'
 		ret.append(op)
 		d1=dummy
 		d1.hint='move'
