@@ -303,8 +303,6 @@ def create_class(class_name,template_types=None, class_parents=None,
 				ret=ret+', '
 			i=i+1
 	ret=ret+"\n{\n"+ts+'public:\n';
-	if public_methods:
-		ret=ret+add_methods(public_methods, ts)
 	sgetters=[]
 	if protected_vars:
 		for v in protected_vars:
@@ -352,7 +350,9 @@ def create_class(class_name,template_types=None, class_parents=None,
 										post_modifier=None,
 										body=v.name+" = _"+v.name+";",
 										hint='setter'))
-	ret=ret+add_methods(sgetters, ts)
+	class_fields=private_vars+protected_vars
+	hpp, cpp, cpp_template=add_methods(class_name, public_methods+sgetters, ts, class_fields)
+	ret=ret+hpp
 	ret=ret+'\n'+ts*2
 	if protected_vars or protected_methods:
 		ret=ret+'\n'+ts+'protected:'
@@ -360,17 +360,19 @@ def create_class(class_name,template_types=None, class_parents=None,
 		for v in protected_vars:
 			ret=ret+ts*2+v.type+' '+v.name+'; //!< \n'
 	if protected_methods:
-		ret=ret+add_methods(protected_methods, ts)
+		hpp1, cpp1, cpp_template1=add_methods(class_name, protected_methods, ts, class_fields)
+		ret=ret+hpp1
 		ret=ret+'\n'+ts*2
 	ret=ret+'\n'+ts+'private:\n'
 	if private_vars:
 		for v in private_vars:
 			ret=ret+ts*2+v.type+' '+v.name+'; //!< \n'
 	if private_methods:
-		ret=ret+add_methods(private_methods, ts)
+		hpp2, cpp2, cpp_template2=add_methods(class_name, private_methods, ts, class_fields)
+		ret=ret+hpp2
 		ret=ret+'\n'+ts*2
 	ret=ret+"\n};"
-	return (autodetected, ret)
+	return (autodetected, ret, cpp+cpp1+cpp2, cpp_template+cpp_template1+cpp_template2)
 
 # vd=0 - not virtual
 # vd=1 - virtual
