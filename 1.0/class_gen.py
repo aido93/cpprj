@@ -1,9 +1,10 @@
 import time
+import os
 import re
 import json
 from difflib import SequenceMatcher
 
-std={
+stl={
     'containers'            : [ "vector","list","map","queue","deque","string","array","set","stack","forward_list","unordered_set","unordered_map"],
     'memory'                : [ "auto_ptr","shared_ptr","weak_ptr","unique_ptr","auto_ptr_ref","default_delete",
                                 "allocator","allocator_arg","allocator_arg_t","allocator_traits",
@@ -85,14 +86,19 @@ def includes(quinc, autodetected, binc):
     ret=ret+"#include <stdint.h>\n"
     return ret
 
-def namespace(namespace_name, body, tabstop):
+def namespace(namespaces_name, body, tabstop):
     ts='\n'+' '*tabstop
+    namespace_name=''
+    if isinstance(namespaces_name, list):
+        namespace_name="::".join(namespaces_name)
+    if isinstance(namespaces_name, str):
+        namespace_name=namespaces_name
     return """/**
  * \\brief """+namespace_name+""" - 
  */
 namespace """+namespace_name+"""
 {
-"""+ts+body.replace('\n',ts)+"\n}; //"+namespace.upper()+" namespace\n"
+"""+ts+body.replace('\n',ts)+"\n}; //"+namespace_name.upper()+" namespace\n"
 
 def add_methods(class_name, methods, ts, class_fields):
     hpp=""
@@ -101,24 +107,24 @@ def add_methods(class_name, methods, ts, class_fields):
         hpp=hpp+ts*2+"/**\n"
         if p.hint=='setter':
             hpp=hpp+ts*2+" * \\brief Setter-method for "+p.args[0].name+" class field \n"
-            hpp=hpp+ts*2+" * \\return None*/\n"
+            hpp=hpp+ts*2+" * \\return None\n*/\n"
         elif p.hint=='getter':
             hpp=hpp+ts*2+" * \\brief Getter-method for "+p.args[0].name+" class field \n"
-            hpp=hpp+ts*2+" * \\return Value of the "+p.args[0].name+"* class field*/\n"
+            hpp=hpp+ts*2+" * \\return Value of the "+p.args[0].name+"* class field\n*/\n"
         elif p.hint=='copy':
             hpp=hpp+ts*2+" * \\brief Copy constructor"
             if p.post_modifier=='=delete':
                 hpp=hpp+" is deleted because \n"
             else:
                 hpp=hpp+'\n'
-            hpp=hpp+ts*2+" * \\return Copy of object**/\n"
+            hpp=hpp+ts*2+" * \\return Copy of object\n**/\n"
         elif p.hint=='move':
             hpp=hpp+ts*2+" * \\brief Move constructor"
             if p.post_modifier=='=delete':
                 hpp=hpp+" is deleted because \n"
             else:
                 hpp=hpp+'\n'
-            hpp=hpp+ts*2+" * \\return Rvalue-reference to the object**/\n"
+            hpp=hpp+ts*2+" * \\return Rvalue-reference to the object\n**/\n"
         else:
             hpp=hpp+ts*2+" * \\brief \n"
             hpp=hpp+ts*2+" * \\details \n"
@@ -150,10 +156,10 @@ def add_methods(class_name, methods, ts, class_fields):
                     hpp=hpp+p.pre_modifier+' '
             else:
                 raise Exception("Undefined pre-modifier: "+str(p.pre_modifier))
-        if p.type:
+        if p.return_type:
             if p.name==class_name:
                 raise Exception("constructor cannot have type")
-            hpp=hpp+p.type+' '
+            hpp=hpp+p.return_type+' '
         hpp=hpp+p.name+' ('
         i=1
         for v in p.args:
@@ -190,8 +196,8 @@ def add_methods(class_name, methods, ts, class_fields):
                         cpp_template=cpp_template+', '
                 cpp_template=cpp_template+">\n"
             if not is_template:
-                if p.type:
-                    cpp=cpp+p.type+' '
+                if p.return_type:
+                    cpp=cpp+p.return_type+' '
                 cpp=cpp+class_name+"::"+p.name+' ('
                 i=1
                 for v in p.args:
@@ -205,7 +211,7 @@ def add_methods(class_name, methods, ts, class_fields):
                 cpp=cpp+")"
                 if p.post_modifier:
                     cpp=cpp+" "+p.post_modifier
-                if p.type==None and p.hint!='move' and p.hint!='copy': # Custom constructor
+                if p.return_type==None and p.hint!='move' and p.hint!='copy': # Custom constructor
                     cpp=cpp+': \n'+ts
                     init_list=[]
                     for constr_arg in p.args:
@@ -216,9 +222,9 @@ def add_methods(class_name, methods, ts, class_fields):
                 cpp=cpp+"\n{"+ts
                 if p.body:
                     cpp=cpp+p.body
-                elif p.type and p.hint!='move' and p.hint!='copy':
+                elif p.return_type and p.hint!='move' and p.hint!='copy':
                     cpp=cpp+p.type+' ret;\n'+ts+'\n'+ts+'return ret;'
-                elif p.type and p.hint=='copy':
+                elif p.return_type and p.hint=='copy':
                     cpp=cpp+'if (this != &'+p.args[0].name+')\n'+ts+'{'
                     cpp=cpp+ts*2
                     cpp=cpp+ts+'}'
@@ -226,7 +232,7 @@ def add_methods(class_name, methods, ts, class_fields):
                 cpp=cpp+"\n}\n"
 
             else:
-                if p.type:
+                if p.return_type:
                     cpp_template=cpp_template+p.type+' '
                 cpp_template=cpp_template+class_name+"::"+p.name+' ('
                 i=1
@@ -242,8 +248,8 @@ def add_methods(class_name, methods, ts, class_fields):
                     cpp_template=cpp_template+" "+p.post_modifier
                 if p.body:
                     cpp_template=cpp_template+"\n{"+ts+p.body+"\n}\n"
-                elif p.type:
-                    cpp_template=cpp_template+'\n{'+ts+p.type+' ret;\n'+ts+'\n'+ts+'return ret;\n}\n'
+                elif p.return_type:
+                    cpp_template=cpp_template+'\n{'+ts+p.return_type+' ret;\n'+ts+'\n'+ts+'return ret;\n}\n'
     return (hpp, cpp, cpp_template)
 
 def create_class(class_name,template_types=None, class_parents=None,
@@ -252,41 +258,44 @@ def create_class(class_name,template_types=None, class_parents=None,
                  public_methods=None,protected_methods=None,private_methods=None,
                  tabstop=4,snake_case=True):
     autodetected=[]
-    for v in private_vars:
-        for inc, t in stl:
-            if any("std::"+substring in v.type for substring in t):
-                if inc not in autodetected:
-                    autodetected.append(inc)
-        else:
-            if v.type[0]=='Q' and len(v.type)!=1:
-                autodetected.append(v.type)
-            elif isinstance(deps_includes, list):
-                for dep in deps_includes:
-                    for file in os.walkdir(dep):
-                        if "class "+v.type in open(file).read():
-                            autodetected.append(file)
-    for v in protected_vars:
-        for inc, t in stl:
-            if any("std::"+substring in v.type for substring in t):
-                if inc not in autodetected:
-                    autodetected.append(inc)
-        else:
-            if v.type[0]=='Q' and len(v.type)!=1:
-                autodetected.append(v.type)
-            elif isinstance(deps_includes, list):
-                for dep in deps_includes:
-                    for file in os.walkdir(dep):
-                        if "class "+v.type in open(file).read():
-                            autodetected.append(file)
-    for func in public_methods:
-        for v in func.args:
+    if isinstance(private_vars, list):
+        for v in private_vars:
             for inc, t in stl:
                 if any("std::"+substring in v.type for substring in t):
                     if inc not in autodetected:
                         autodetected.append(inc)
             else:
-                if v.type[0]=='Q':
+                if v.type[0]=='Q' and len(v.type)!=1:
                     autodetected.append(v.type)
+                elif isinstance(deps_includes, list):
+                    for dep in deps_includes:
+                        for file in os.walkdir(dep):
+                            if "class "+v.type in open(file).read():
+                                autodetected.append(file)
+    if isinstance(protected_vars, list):
+        for v in protected_vars:
+            for inc, t in stl:
+                if any("std::"+substring in v.type for substring in t):
+                    if inc not in autodetected:
+                        autodetected.append(inc)
+            else:
+                if v.type[0]=='Q' and len(v.type)!=1:
+                    autodetected.append(v.type)
+                elif isinstance(deps_includes, list):
+                    for dep in deps_includes:
+                        for file in os.walkdir(dep):
+                            if "class "+v.type in open(file).read():
+                                autodetected.append(file)
+    if isinstance(public_methods, list):
+        for func in public_methods:
+            for v in func.args:
+                for inc, t in stl.items():
+                    if any("std::"+substring in v.type for substring in t):
+                        if inc not in autodetected:
+                            autodetected.append(inc)
+                else:
+                    if v.type[0]=='Q':
+                        autodetected.append(v.type)
     ts=' '*tabstop
     ret="""/**
  * \\brief
@@ -356,8 +365,19 @@ def create_class(class_name,template_types=None, class_parents=None,
                                         post_modifier=None,
                                         body=v.name+" = _"+v.name+";",
                                         hint='setter'))
-    class_fields=private_vars+protected_vars
-    hpp, cpp, cpp_template=add_methods(class_name, public_methods+sgetters, ts, class_fields)
+    class_fields=[]
+    if isinstance(private_vars, list):
+        class_fields.extend(private_vars)
+    if isinstance(protected_vars, list):
+        class_fields.extend(protected_vars)
+    pub=[]
+    if isinstance(public_methods, list):
+        pub.extend(public_methods)
+    if isinstance(sgetters, list):
+        pub.extend(sgetters)
+    hpp, cpp, cpp_template=add_methods(class_name, pub, ts, class_fields)
+    hpp1, cpp1, cpp_template1='', '', ''
+    hpp2, cpp2, cpp_template2='', '', ''
     ret=ret+hpp
     ret=ret+'\n'+ts*2
     if protected_vars or protected_methods:
@@ -451,22 +471,25 @@ def bundle( class_name, author, email,
             namespaces_name=None,
             template_types=None, class_parents=None,
             dd=0, dc=0, dm=0, vd=0, custom=None,
-            private_vars=None,protected_vars=None, 
+            private_vars=None,protected_vars=None, deps_includes=None,
             private_setters=False, private_getters=False, protected_setters=False, protected_getters=False,
             public_methods=None,protected_methods=None,private_methods=None,
             quinch=None, binch=None, quincs=None, bincs=None,
             tabstop=4, snake_case=True):
     publics=basic_class_content(class_name, dd, dc,dm, vd, custom)
-    publics.extend(public_methods)
+    if isinstance(public_methods, list):
+        publics.extend(public_methods)
     header_autodetected, hpp_gen, cpp_gen, cpp_template_gen=create_class(class_name,template_types, class_parents,
-                 private_vars,protected_vars, 
+                 private_vars,protected_vars, deps_includes,
                  private_setters, private_getters, protected_setters, protected_getters,
                  publics,protected_methods,private_methods,
                  tabstop,snake_case)
-    hpp=header(class_name, author, email)+includes(quinch,header_autodetected,binch)+namespace(namespace_name, hpp_gen+cpp_template_gen, tabstop)
-    cpp=header(class_name, author, email)+includes(quincs,src_autodetected,   bincs)+namespace(namespace_name, cpp_gen, tabstop)
+    src_autodetected=[]
+    hpp=header(class_name, author, email)+includes(quinch,header_autodetected,binch)+namespace(namespaces_name, hpp_gen+cpp_template_gen, tabstop)
+    cpp=header(class_name, author, email)+includes(quincs,src_autodetected,   bincs)+namespace(namespaces_name, cpp_gen, tabstop)
     #test=header(class_name, author, email)+gen_test(class_name)
-    return (hpp+cpp_template, cpp)
+    a=hpp_gen+cpp_template_gen
+    return (a.replace('\n', os.linesep), cpp_gen.replace('\\n', '\n'))
 
 # TODO: Change maintainer to somebody from developers
 # TODO: Add simple variable checking to method body
