@@ -110,21 +110,23 @@ def add_methods(class_name, methods, ts, class_fields):
             hpp=hpp+ts*2+" * \\return None\n*/\n"
         elif p.hint=='getter':
             hpp=hpp+ts*2+" * \\brief Getter-method for "+p.args[0].name+" class field \n"
-            hpp=hpp+ts*2+" * \\return Value of the "+p.args[0].name+"* class field\n*/\n"
+            hpp=hpp+ts*2+" * \\return Value of the "+p.args[0].name+"* class field\n"+2*ts+"*/\n"
         elif p.hint=='copy':
-            hpp=hpp+ts*2+" * \\brief Copy constructor"
-            if p.post_modifier=='=delete':
-                hpp=hpp+" is deleted because \n"
-            else:
-                hpp=hpp+'\n'
-            hpp=hpp+ts*2+" * \\return Copy of object\n**/\n"
+            if p.return_type==None:
+                hpp=hpp+ts*2+" * \\brief Copy constructor"
+                if p.post_modifier=='=delete':
+                    hpp=hpp+" is deleted because \n"
+                else:
+                    hpp=hpp+'\n'
+                hpp=hpp+ts*2+" * \\return Copy of object\n"+2*ts+"**/\n"
         elif p.hint=='move':
-            hpp=hpp+ts*2+" * \\brief Move constructor"
-            if p.post_modifier=='=delete':
-                hpp=hpp+" is deleted because \n"
-            else:
-                hpp=hpp+'\n'
-            hpp=hpp+ts*2+" * \\return Rvalue-reference to the object\n**/\n"
+            if p.return_type==None:
+                hpp=hpp+ts*2+" * \\brief Move constructor"
+                if p.post_modifier=='=delete':
+                    hpp=hpp+" is deleted because \n"
+                else:
+                    hpp=hpp+'\n'
+                hpp=hpp+ts*2+" * \\return Rvalue-reference to the object\n"+2*ts+"**/\n"
         else:
             hpp=hpp+ts*2+" * \\brief \n"
             hpp=hpp+ts*2+" * \\details \n"
@@ -132,12 +134,12 @@ def add_methods(class_name, methods, ts, class_fields):
                 hpp=hpp+ts*2+" * \\param [in] "+v.name+" - "+". Default value is "+v.value+"\n"
             for v in p.args:
                 hpp=hpp+ts*2+" * \\param [in] "+v.name+" - "+". Default value is "+v.value+"\n"
-            if not p.type:
+            if not p.return_type:
                 hpp=hpp+ts*2+" **/\n"
-            elif p.type=='void':
-                hpp=hpp+ts*2+" * \\return None \n **/\n"
+            elif p.return_type=='void':
+                hpp=hpp+ts*2+" * \\return None \n"+2*ts+"**/\n"
             else:
-                hpp=hpp+ts*2+" * \\return  \n **/\n"
+                hpp=hpp+ts*2+" * \\return  \n"+2*ts+"**/\n"
         # Create method
         hpp=hpp+ts*2
         if p.template_args:
@@ -171,8 +173,8 @@ def add_methods(class_name, methods, ts, class_fields):
         hpp=hpp+")"
         if p.post_modifier:
             if p.post_modifier in post_method_modifiers:
-                if p.name==class_name and p.post_modifier!="=delete":
-                    raise Exception("constructor cannot be "+str(post_modifier))
+                if p.name==class_name and not (p.post_modifier=="=delete" or p.post_modifier=="noexcept"):
+                    raise Exception("constructor cannot be "+str(p.post_modifier))
                 else:
                     hpp=hpp+" "+p.post_modifier
             else:
@@ -406,13 +408,12 @@ def create_class(class_name,template_types=None, class_parents=None,
 def basic_class_content(class_name, dd=False, dc=False, dm=False, vd=0, custom=None):
     ret=[]
 
-    dummy=method(name=class_name)
     if not dd:
-        d1=dummy
+        d1=method(name=class_name)
         d1.post_modifier="noexcept"
         ret.append(d1)
     else:
-        d1=dummy
+        d1=method(name=class_name)
         d1.post_modifier="=delete"
         ret.append(d1)
 
@@ -420,12 +421,12 @@ def basic_class_content(class_name, dd=False, dc=False, dm=False, vd=0, custom=N
         op=method(return_type=class_name, name="operator=", args=[arg(type="const "+class_name+"&"),])
         op.hint='copy'
         ret.append(op)
-        d1=dummy
+        d1=method(name=class_name)
         d1.hint='copy'
         d1.args=[arg(type="const "+class_name+"&"),]
         ret.append(d1)
     else:
-        d1=dummy
+        d1=method(name=class_name)
         d1.hint='copy'
         d1.args=[arg(type="const "+class_name+"&"),]
         d1.post_modifier="=delete"
@@ -435,12 +436,12 @@ def basic_class_content(class_name, dd=False, dc=False, dm=False, vd=0, custom=N
         op=method(return_type=class_name+'&', name="operator=", args=[arg(type="const "+class_name+"&&"),])
         op.hint='move'
         ret.append(op)
-        d1=dummy
+        d1=method(name=class_name)
         d1.hint='move'
         d1.args=[arg(type="const "+class_name+"&&"),]
         ret.append(d1)
     else:
-        d1=dummy
+        d1=method(name=class_name)
         d1.hint='move'
         d1.args=[arg(type="const "+class_name+"&&"),]
         d1.post_modifier="=delete"
@@ -448,19 +449,19 @@ def basic_class_content(class_name, dd=False, dc=False, dm=False, vd=0, custom=N
     
     if custom:
         for constructor_params in custom:
-            d1=dummy
+            d1=method(name=class_name)
             d1.args=constructor_params
             ret.append(d1)
     if vd==0:
-        d1=dummy
+        d1=method(name=class_name)
         d1.name="~"+class_name
         ret.append(d1)
     elif vd==1:
-        d1=dummy
+        d1=method(name=class_name)
         d1.name="~"+class_name
         ret.append(d1)
     elif vd==2:
-        d1=dummy
+        d1=method(name=class_name)
         d1.name="~"+class_name
         d1.type="virtual"
         d1.post_modifier="=0"
