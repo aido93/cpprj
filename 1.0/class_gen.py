@@ -31,11 +31,15 @@ post_method_modifiers  = [  '=0', '=delete', 'const', 'const =0', 'const =delete
 post_class_modifiers   = ['final', ]
 
 class arg:
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
     type=None
     name=''
     value=None
 
 class method:
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
     template_args=[]
     pre_modifier=None
     return_type=None
@@ -46,6 +50,8 @@ class method:
     hint=''
 
 def to_camel(snake_str):
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
     components = snake_str.split('_')
     return components[0] + "".join(x.title() for x in components[1:])
 
@@ -383,7 +389,6 @@ def basic_class_content(class_name, dd=False, dc=False, dm=False, vd=0, custom=N
     dummy=method(name=class_name)
     if not dd:
         d1=dummy
-        op.hint='default'
         d1.post_modifier="noexcept"
         ret.append(d1)
     else:
@@ -392,31 +397,33 @@ def basic_class_content(class_name, dd=False, dc=False, dm=False, vd=0, custom=N
         ret.append(d1)
 
     if not dc:
-        op=method(return_type=class_name, name="operator=", args=[arg(type="const "+class_name+"&")])
+        op=method(return_type=class_name, name="operator=", args=[arg(type="const "+class_name+"&"),])
         op.hint='copy'
         ret.append(op)
         d1=dummy
         d1.hint='copy'
-        d1.args=method(args=[arg("const "+class_name+"&")])
+        d1.args=[arg(type="const "+class_name+"&"),]
         ret.append(d1)
     else:
         d1=dummy
         d1.hint='copy'
-        d1.args=method(args=[arg("const "+class_name+"&")], post_modifier="=delete")
+        d1.args=[arg(type="const "+class_name+"&"),]
+        d1.post_modifier="=delete"
         ret.append(d1)
 
     if not dm:
-        op=method(return_type=class_name+'&', name="operator=", args=[arg(type="const "+class_name+"&&")])
+        op=method(return_type=class_name+'&', name="operator=", args=[arg(type="const "+class_name+"&&"),])
         op.hint='move'
         ret.append(op)
         d1=dummy
         d1.hint='move'
-        d1.args=method(args=[arg("const "+class_name+"&&")])
+        d1.args=[arg(type="const "+class_name+"&&"),]
         ret.append(d1)
     else:
         d1=dummy
         d1.hint='move'
-        d1.args=method(args=[arg("const "+class_name+"&&")], post_modifier="=delete")
+        d1.args=[arg(type="const "+class_name+"&&"),]
+        d1.post_modifier="=delete"
         ret.append(d1)
     
     if custom:
