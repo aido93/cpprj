@@ -426,8 +426,11 @@ def create_class(class_name,template_types=None, class_parents=None,
 # dd=0 - custom constructor (delete default)
 # dd=1 - deleted constructor
 # dd=2 - default constructor
-def basic_class_content(class_name, dd=0, dc=0, dm=0, vd=0, custom=None):
+def basic_class_content(class_name, template_types, dd=0, dc=0, dm=0, vd=0, custom=None):
     ret=[]
+    templated_class=class_name
+    if template_types and  isinstance(template_types,list):
+        templated_class=templated_class+'<'+', '.join(template_types)+'>'
 
     if dd==0:
         d1=method(name=class_name)
@@ -446,7 +449,7 @@ def basic_class_content(class_name, dd=0, dc=0, dm=0, vd=0, custom=None):
         op=method(return_type=class_name, name="operator=", args=[arg(type="const "+class_name+"&"),])
         op.hint='copy'
         ret.append(op)
-        d1=method(name=class_name)
+        d1=method(name=templated_class)
         d1.hint='copy'
         d1.args=[arg(type="const "+class_name+"&"),]
         ret.append(d1)
@@ -457,7 +460,7 @@ def basic_class_content(class_name, dd=0, dc=0, dm=0, vd=0, custom=None):
         d1.post_modifier="=delete"
         ret.append(d1)
     elif dc==2:
-        op=method(return_type=class_name, name="operator=", args=[arg(type="const "+class_name+"&"),])
+        op=method(return_type=templated_class, name="operator=", args=[arg(type="const "+class_name+"&"),])
         op.hint='copy'
         op.post_modifier='=default'
         ret.append(op)
@@ -468,7 +471,7 @@ def basic_class_content(class_name, dd=0, dc=0, dm=0, vd=0, custom=None):
         ret.append(d1)
 
     if dm==0:
-        op=method(return_type=class_name+'&', name="operator=", args=[arg(type="const "+class_name+"&&"),])
+        op=method(return_type=templated_class+'&', name="operator=", args=[arg(type="const "+class_name+"&&"),])
         op.hint='move'
         ret.append(op)
         d1=method(name=class_name)
@@ -527,7 +530,7 @@ def bundle( class_name, author, email,
         class_name=to_snake(class_name)
     else:
         class_name=to_camel(class_name)
-    publics=basic_class_content(class_name, dd, dc,dm, vd, custom)
+    publics=basic_class_content(class_name, template_types, dd, dc,dm, vd, custom)
     if isinstance(public_methods, list):
         publics.extend(public_methods)
     header_autodetected, hpp_gen, cpp_gen, cpp_template_gen=create_class(class_name,template_types, class_parents,
