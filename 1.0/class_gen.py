@@ -27,7 +27,7 @@ stl={
 }
 
 pre_method_modifiers   = ['static', 'virtual', 'extern', 'friend']
-post_method_modifiers  = [  '=0', '=delete', 'const', 'const =0', 'const =delete', 'volatile', 
+post_method_modifiers  = [  '=0', '=delete', '=default', 'const', 'const =0', 'const =delete', 'volatile', 
                             'const volatile', 'noexcept', 'override', 'final', '&', '&&']
 post_class_modifiers   = ['final', ]
 not_cpp_post_mod=['=delete', '=0', '=default']
@@ -51,6 +51,11 @@ class method:
     post_modifier=None
     body=None
     hint=''
+
+class parents:
+    type='public'
+    name=''
+    template_types=None
 
 def to_camel(snake_str):
     def __init__(self, **kwargs):
@@ -187,7 +192,7 @@ def add_methods(class_name, template_types, methods, ts, class_fields):
                 else:
                     hpp=hpp+" "+p.post_modifier
             else:
-                raise Exception("Undefined post-modifier: "+str(p.pre_modifier))
+                raise Exception("Undefined post-modifier: "+str(p.post_modifier))
         hpp=hpp+";\n\n"
     # create src
     cpp=""
@@ -325,7 +330,9 @@ def create_class(class_name,template_types=None, class_parents=None,
         ret=ret+': '
         i=1
         for c in class_parents:
-            ret=ret+c
+            ret=ret+c.type+' '+c.name
+            if c.template_types and isinstance(c.template_types, list):
+                ret=ret+'<'+', '.join(c.template_types)+'>'
             if i<len(class_parents):
                 ret=ret+', '
             i=i+1
@@ -449,7 +456,7 @@ def basic_class_content(class_name, dd=0, dc=0, dm=0, vd=0, custom=None):
         d1.args=[arg(type="const "+class_name+"&"),]
         d1.post_modifier="=delete"
         ret.append(d1)
-    elif dc==1:
+    elif dc==2:
         op=method(return_type=class_name, name="operator=", args=[arg(type="const "+class_name+"&"),])
         op.hint='copy'
         op.post_modifier='=default'
