@@ -104,7 +104,7 @@ namespace """+namespace_name+"""
 {
 """+ts+body.replace('\n',ts)+"\n}; //"+namespace_name.upper()+" namespace\n"
 
-def add_methods(class_name, methods, ts, class_fields):
+def add_methods(class_name, template_types, methods, ts, class_fields):
     hpp=""
     for p in methods:
         # Create comments
@@ -158,13 +158,7 @@ def add_methods(class_name, methods, ts, class_fields):
         # Create method
         hpp=hpp+ts*2
         if p.template_args:
-            hpp=hpp+"template <"
-            i=1
-            for t in p.template_args:
-                hpp=hpp+'class '+t
-                if i<len(p.template_args):
-                    hpp=hpp+', '
-            hpp=hpp+">\n"
+            hpp=hpp+"template <class "+", class ".join(p.template_args)+'>\n'
         if p.pre_modifier:
             if p.pre_modifier in pre_method_modifiers:
                 if p.name==class_name:
@@ -200,22 +194,21 @@ def add_methods(class_name, methods, ts, class_fields):
     cpp_template=""
     def similar(a, b):
         return SequenceMatcher(None, a, b).ratio()
+    templated_class=class_name
+    if template_types and  isinstance(template_types,list):
+        templated_class=templated_class+'<'+', '.join(template_types)+'>'
     for p in methods:
         if (p.post_modifier and p.post_modifier not in not_cpp_post_mod) or not p.post_modifier:
             is_template=False
+            if template_types and  isinstance(template_types,list):
+                cpp_template=cpp_template+"template <class "+', class '.join(template_types)+'>\n'
             if p.template_args:
                 is_template=True
-                cpp_template=cpp_template+"template <"
-                i=1
-                for t in p.template_args:
-                    cpp_template=cpp_template+t
-                    if i<len(p.template_args):
-                        cpp_template=cpp_template+', '
-                cpp_template=cpp_template+">\n"
+                cpp_template=cpp_template+"template <class "+', class '.join(p.template_args)+'>\n'
             if not is_template:
                 if p.return_type:
                     cpp=cpp+p.return_type+' '
-                cpp=cpp+class_name+"::"+p.name+' ('
+                cpp=cpp+templated_class+"::"+p.name+' ('
                 i=1
                 for v in p.args:
                     if v.name:
@@ -254,7 +247,7 @@ def add_methods(class_name, methods, ts, class_fields):
             else:
                 if p.return_type:
                     cpp_template=cpp_template+p.type+' '
-                cpp_template=cpp_template+class_name+"::"+p.name+' ('
+                cpp_template=cpp_template+templated_class+"::"+p.name+' ('
                 i=1
                 for v in p.args:
                     if v.name:
@@ -270,6 +263,9 @@ def add_methods(class_name, methods, ts, class_fields):
                     cpp_template=cpp_template+"\n{"+ts+p.body+"\n}\n"
                 elif p.return_type:
                     cpp_template=cpp_template+'\n{'+ts+p.return_type+' ret;\n'+ts+'\n'+ts+'return ret;\n}\n'
+        if template_types and  isinstance(template_types,list):
+            cpp_template=cpp_template+cpp
+            cpp=''
     return (hpp, cpp, cpp_template)
 
 def create_class(class_name,template_types=None, class_parents=None,
@@ -322,13 +318,9 @@ def create_class(class_name,template_types=None, class_parents=None,
  * \\details
  * */\n"""
     if template_types:
-        ret=ret+"template <"
-        i=1
-        for t in template_types:
-            ret=ret+t
-            if i<len(template_types):
-                ret=ret+', '
-        ret=ret+">\nclass"+class_name;
+        ret=ret+'template <class '+', class '.join(template_types)
+        ret=ret+">\n"
+    ret=ret+"class "+class_name;
     if class_parents:
         ret=ret+': '
         i=1
@@ -395,7 +387,7 @@ def create_class(class_name,template_types=None, class_parents=None,
         pub.extend(public_methods)
     if isinstance(sgetters, list):
         pub.extend(sgetters)
-    hpp, cpp, cpp_template=add_methods(class_name, pub, ts, class_fields)
+    hpp, cpp, cpp_template=add_methods(class_name, template_types, pub, ts, class_fields)
     hpp1, cpp1, cpp_template1='', '', ''
     hpp2, cpp2, cpp_template2='', '', ''
     ret=ret+hpp
@@ -406,7 +398,7 @@ def create_class(class_name,template_types=None, class_parents=None,
         for v in protected_vars:
             ret=ret+ts*2+v.type+' '+v.name+'; //!< \n'
     if protected_methods:
-        hpp1, cpp1, cpp_template1=add_methods(class_name, protected_methods, ts, class_fields)
+        hpp1, cpp1, cpp_template1=add_methods(class_name, template_types, protected_methods, ts, class_fields)
         ret=ret+hpp1
         ret=ret+'\n'+ts*2
     ret=ret+'\n'+ts+'private:\n'
@@ -414,10 +406,10 @@ def create_class(class_name,template_types=None, class_parents=None,
         for v in private_vars:
             ret=ret+ts*2+v.type+' '+v.name+'; //!< \n'
     if private_methods:
-        hpp2, cpp2, cpp_template2=add_methods(class_name, private_methods, ts, class_fields)
+        hpp2, cpp2, cpp_template2=add_methods(class_name, template_types, private_methods, ts, class_fields)
         ret=ret+hpp2
         ret=ret+'\n'+ts*2
-    ret=ret+"\n};"
+    ret=ret+"\n};\n\n"
     return (autodetected, ret, cpp+cpp1+cpp2, cpp_template+cpp_template1+cpp_template2)
 
 # vd=0 - not virtual
@@ -534,7 +526,9 @@ def bundle( class_name, author, email,
                  tabstop,snake_case)
     src_autodetected=[]
     hpp=header(class_name, author, email)+includes(quinch,header_autodetected,binch)+namespace(namespaces_name, hpp_gen+cpp_template_gen, tabstop)
-    cpp=header(class_name, author, email)+includes(quincs,src_autodetected,   bincs)+namespace(namespaces_name, cpp_gen, tabstop)
+    cpp=''
+    if not template_types:
+        cpp=header(class_name, author, email)+includes(quincs,src_autodetected,   bincs)+namespace(namespaces_name, cpp_gen, tabstop)
     #test=header(class_name, author, email)+gen_test(class_name)
     return (hpp.replace('\n', os.linesep), cpp.replace('\\n', '\n'))
 
