@@ -30,6 +30,8 @@ pre_method_modifiers   = ['static', 'virtual', 'extern', 'friend']
 post_method_modifiers  = [  '=0', '=delete', 'const', 'const =0', 'const =delete', 'volatile', 
                             'const volatile', 'noexcept', 'override', 'final', '&', '&&']
 post_class_modifiers   = ['final', ]
+not_cpp_post_mod=['=delete', '=0', '=default']
+constructor_post_mod=['=delete', '=0', '=default', 'noexcept']
 
 class arg:
     def __init__(self, **kwargs):
@@ -65,7 +67,7 @@ def to_snake(name):
 def header(class_name, author, email):
     return """/**
  * Description: Interface to the """+class_name+"""-class
- * Todo: 
+ * TODO: 
  * Author: """+author+"<"+email+">"+"""
  * Date:   """+time.strftime('%d.%m.%Y')+"""
  * */
@@ -93,6 +95,8 @@ def namespace(namespaces_name, body, tabstop):
         namespace_name="::".join(namespaces_name)
     if isinstance(namespaces_name, str):
         namespace_name=namespaces_name
+    if namespace_name=='':
+        return body
     return """/**
  * \\brief """+namespace_name+""" - 
  */
@@ -116,16 +120,27 @@ def add_methods(class_name, methods, ts, class_fields):
                 hpp=hpp+ts*2+" * \\brief Copy constructor"
                 if p.post_modifier=='=delete':
                     hpp=hpp+" is deleted because \n"
+                elif p.post_modifier=='=default':
+                    hpp=hpp+" is default \n"
                 else:
                     hpp=hpp+'\n'
                 hpp=hpp+ts*2+" * \\return Copy of object\n"+2*ts+"**/\n"
+            else:
+                hpp=hpp+ts*2+" * \\brief Copy operator=\n"
+                hpp=hpp+ts*2+" * \\return Copy of object\n"+2*ts+"**/\n"
+                
         elif p.hint=='move':
             if p.return_type==None:
                 hpp=hpp+ts*2+" * \\brief Move constructor"
                 if p.post_modifier=='=delete':
                     hpp=hpp+" is deleted because \n"
+                elif p.post_modifier=='=default':
+                    hpp=hpp+" is default \n"
                 else:
                     hpp=hpp+'\n'
+                hpp=hpp+ts*2+" * \\return Rvalue-reference to the object\n"+2*ts+"**/\n"
+            else:
+                hpp=hpp+ts*2+" * \\brief Move operator=\n"
                 hpp=hpp+ts*2+" * \\return Rvalue-reference to the object\n"+2*ts+"**/\n"
         else:
             hpp=hpp+ts*2+" * \\brief \n"
@@ -173,20 +188,20 @@ def add_methods(class_name, methods, ts, class_fields):
         hpp=hpp+")"
         if p.post_modifier:
             if p.post_modifier in post_method_modifiers:
-                if p.name==class_name and not (p.post_modifier=="=delete" or p.post_modifier=="noexcept"):
+                if p.name==class_name and p.post_modifier not in constructor_post_mod:
                     raise Exception("constructor cannot be "+str(p.post_modifier))
                 else:
                     hpp=hpp+" "+p.post_modifier
             else:
                 raise Exception("Undefined post-modifier: "+str(p.pre_modifier))
-        hpp=hpp+";\n"
+        hpp=hpp+";\n\n"
     # create src
     cpp=""
     cpp_template=""
     def similar(a, b):
         return SequenceMatcher(None, a, b).ratio()
     for p in methods:
-        if (p.post_modifier and p.post_modifier != "=delete" and p.post_modifier != "=0") or not p.post_modifier:
+        if (p.post_modifier and p.post_modifier not in not_cpp_post_mod) or not p.post_modifier:
             is_template=False
             if p.template_args:
                 is_template=True
@@ -213,7 +228,7 @@ def add_methods(class_name, methods, ts, class_fields):
                 cpp=cpp+")"
                 if p.post_modifier:
                     cpp=cpp+" "+p.post_modifier
-                if p.return_type==None and p.hint!='move' and p.hint!='copy': # Custom constructor
+                if p.return_type==None and p.name[0]!='~' and class_fields and p.hint!='move' and p.hint!='copy': # Custom constructor
                     cpp=cpp+': \n'+ts
                     init_list=[]
                     for constr_arg in p.args:
@@ -221,17 +236,20 @@ def add_methods(class_name, methods, ts, class_fields):
                             if similar(constr_arg, var)>=0.8:
                                 init_list.append(prot+'('+constr_arg+')')
                     cpp=cpp+('\n'+ts).join(init_list)
-                cpp=cpp+"\n{"+ts
+                cpp=cpp+"\n{\n"+ts
                 if p.body:
                     cpp=cpp+p.body
                 elif p.return_type and p.hint!='move' and p.hint!='copy':
                     cpp=cpp+p.type+' ret;\n'+ts+'\n'+ts+'return ret;'
                 elif p.return_type and p.hint=='copy':
-                    cpp=cpp+'if (this != &'+p.args[0].name+')\n'+ts+'{'
-                    cpp=cpp+ts*2
-                    cpp=cpp+ts+'}'
-                    cpp=cpp+'return *this;'
-                cpp=cpp+"\n}\n"
+                    if p.args[0].name!='':
+                        cpp=cpp+'if (this != &'+p.args[0].name+')\n'+ts+'{\n'
+                    else:
+                        cpp=cpp+'if (this != &x)\n'+ts+'{\n'
+                    cpp=cpp+ts*2+'\n'
+                    cpp=cpp+ts+'}\n'
+                    cpp=cpp+ts+'return *this;'
+                cpp=cpp+"\n}\n\n"
 
             else:
                 if p.return_type:
@@ -405,19 +423,27 @@ def create_class(class_name,template_types=None, class_parents=None,
 # vd=0 - not virtual
 # vd=1 - virtual
 # vd=2 - pure virtual
-def basic_class_content(class_name, dd=False, dc=False, dm=False, vd=0, custom=None):
+# Constructors:
+# dd=0 - custom constructor (delete default)
+# dd=1 - deleted constructor
+# dd=2 - default constructor
+def basic_class_content(class_name, dd=0, dc=0, dm=0, vd=0, custom=None):
     ret=[]
 
-    if not dd:
+    if dd==0:
         d1=method(name=class_name)
         d1.post_modifier="noexcept"
         ret.append(d1)
-    else:
+    elif dd==1:
         d1=method(name=class_name)
         d1.post_modifier="=delete"
         ret.append(d1)
+    elif dd==2:
+        d1=method(name=class_name)
+        d1.post_modifier="=default"
+        ret.append(d1)
 
-    if not dc:
+    if dc==0:
         op=method(return_type=class_name, name="operator=", args=[arg(type="const "+class_name+"&"),])
         op.hint='copy'
         ret.append(op)
@@ -425,14 +451,24 @@ def basic_class_content(class_name, dd=False, dc=False, dm=False, vd=0, custom=N
         d1.hint='copy'
         d1.args=[arg(type="const "+class_name+"&"),]
         ret.append(d1)
-    else:
+    elif dc==1:
         d1=method(name=class_name)
         d1.hint='copy'
         d1.args=[arg(type="const "+class_name+"&"),]
         d1.post_modifier="=delete"
         ret.append(d1)
+    elif dc==1:
+        op=method(return_type=class_name, name="operator=", args=[arg(type="const "+class_name+"&"),])
+        op.hint='copy'
+        op.post_modifier='=default'
+        ret.append(op)
+        d1=method(name=class_name)
+        d1.hint='copy'
+        d1.args=[arg(type="const "+class_name+"&"),]
+        d1.post_modifier="=default"
+        ret.append(d1)
 
-    if not dm:
+    if dm==0:
         op=method(return_type=class_name+'&', name="operator=", args=[arg(type="const "+class_name+"&&"),])
         op.hint='move'
         ret.append(op)
@@ -440,11 +476,21 @@ def basic_class_content(class_name, dd=False, dc=False, dm=False, vd=0, custom=N
         d1.hint='move'
         d1.args=[arg(type="const "+class_name+"&&"),]
         ret.append(d1)
-    else:
+    elif dm==1:
         d1=method(name=class_name)
         d1.hint='move'
         d1.args=[arg(type="const "+class_name+"&&"),]
         d1.post_modifier="=delete"
+        ret.append(d1)
+    elif dm==2:
+        op=method(return_type=class_name+'&', name="operator=", args=[arg(type="const "+class_name+"&&"),])
+        op.hint='move'
+        op.post_modifier='=default'
+        ret.append(op)
+        d1=method(name=class_name)
+        d1.hint='move'
+        d1.args=[arg(type="const "+class_name+"&&"),]
+        d1.post_modifier="=default"
         ret.append(d1)
     
     if custom:
@@ -459,11 +505,12 @@ def basic_class_content(class_name, dd=False, dc=False, dm=False, vd=0, custom=N
     elif vd==1:
         d1=method(name=class_name)
         d1.name="~"+class_name
+        d1.pre_modifier="virtual"
         ret.append(d1)
     elif vd==2:
         d1=method(name=class_name)
         d1.name="~"+class_name
-        d1.type="virtual"
+        d1.pre_modifier="virtual"
         d1.post_modifier="=0"
         ret.append(d1)
     return ret
@@ -489,8 +536,7 @@ def bundle( class_name, author, email,
     hpp=header(class_name, author, email)+includes(quinch,header_autodetected,binch)+namespace(namespaces_name, hpp_gen+cpp_template_gen, tabstop)
     cpp=header(class_name, author, email)+includes(quincs,src_autodetected,   bincs)+namespace(namespaces_name, cpp_gen, tabstop)
     #test=header(class_name, author, email)+gen_test(class_name)
-    a=hpp_gen+cpp_template_gen
-    return (a.replace('\n', os.linesep), cpp_gen.replace('\\n', '\n'))
+    return (hpp.replace('\n', os.linesep), cpp.replace('\\n', '\n'))
 
 # TODO: Change maintainer to somebody from developers
 # TODO: Add simple variable checking to method body
