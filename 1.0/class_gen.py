@@ -523,6 +523,10 @@ def bundle( class_name, author, email,
             public_methods=None,protected_methods=None,private_methods=None,
             quinch=None, binch=None, quincs=None, bincs=None,
             tabstop=4, snake_case=True):
+    if snake_case:
+        class_name=to_snake(class_name)
+    else:
+        class_name=to_camel(class_name)
     publics=basic_class_content(class_name, dd, dc,dm, vd, custom)
     if isinstance(public_methods, list):
         publics.extend(public_methods)
