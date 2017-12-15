@@ -438,7 +438,7 @@ def create_class(class_name,template_types=None, class_parents=None,
     ret=ret+hpp
     ret=ret+'\n'+ts*2
     if protected_vars or protected_methods:
-        ret=ret+'\n'+ts+'protected:'
+        ret=ret+'\n'+ts+'protected:\n'
     if protected_vars:
         for v in protected_vars:
             ret=ret+ts*2+v.type+' '+v.name+'; //!< \n'
