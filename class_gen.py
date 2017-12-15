@@ -80,57 +80,123 @@ def fields(line):
     del ret[-1]
     return ret
 
-'''# for generating a bunch of dummy functions
+# for generating a bunch of dummy functions
 def funcs(line):
     line=line.replace('\n','')
     line=line.replace(';','; ')
-    line=re.sub('[\t ]+',' ', line)
+    line=re.sub('\s+',' ', line)
     funcs=line.split('; ')
     ret=[]
     for f in funcs:
-		pre, ta, t, n, args, post=re.parse(f)
-		a=fields(';'.join(args))
-		ret.append(method(template_args=ta, pre_modifier=pre, return_type=t, name=n, args=a, post_modifier=post))
-	return ret
-'''
+        a=re.match('((?:.*)\s)+(\w+)(?:<(.*?)>)?\((.*?)\)(.*?)', f)
+        return_type=re.sub('\s+',' ',a.group(1))
+        pre=return_type.split(' ')
+        if pre[0] in pre_method_modifiers:
+            return_type=pre[1:]
+            pre=pre[0]
+        else:
+            pre=None
+        name=a.group(2)
+        template_list=a.group(3).replace(',',', ')
+        template_list=re.sub('\s+',' ', template_list)
+        template_list=template_list.split(', ')
+        args=a.group(4).replace(',',', ')
+        if args!='':
+            args=re.sub('\s+',' ', args)
+            args=args.split(', ')
+            new_args=[]
+            t1=0
+            temp=''
+            for ar in args:
+                c1=ar.count('<')
+                c2=ar.count('>')
+                t1=t1+c1-c2
+                if t1<0:
+                    raise Exception('Count of < is less than >')
+                elif t1>0:
+                    temp=temp+ar
+                else:
+                    a1=temp+ar
+                    kv1=a1.split('=')
+                    value=None
+                    if len(kv1)==2:
+                        type_name=kv[0]
+                        value=kv1[1]
+                    else:
+                        type_name=a1
+                        value=None
+                    *type_f, name=type_name.split(' ')
+                    new_args.append(arg(type=' '.join(type_f), name=name, value=value))
+                    temp=''
+        else:
+            new_args=None
+        #now we cannot continue because of map<int, int, str> - this cannot be parsed correctly
+        post_modifier=a.group(5)
+        if post_modifier!='' post_modifier not in post_method_modifiers:
+            raise Exception('Undefined post-modifier:'+post_modifier)
+        ret.append(method(  template_args=template_list, 
+                            pre_modifier=pre, 
+                            return_type=return_type, 
+                            name=name, 
+                            args=new_args, 
+                            post_modifier=post_modifier))
+    return ret
+
+def virtuals(line):
+    x=(f.pre_modifier='virtual' for f in funcs(line))
+    return x
+
+def statics(line):
+    x=(f.pre_modifier='static' for f in funcs(line))
+    return x
+
+def consts(line):
+    x=(f.post_modifier='const' for f in funcs(line))
+    return x
 
 def enum(name, upper=False, ts=' '*4, is_class=True, elements=[]):
-	if upper:
-		a=(s.upper() for s in elements)
-	else:
-		a=elements
-	els=(',\n'+ts).join(a)
-	if is_class:
-		return 'enum class\n{'+ts+els+'\n};\n'
-	else:
-		return 'enum \n{'+ts+els+'\n};\n'
+    if upper:
+        a=(s.upper() for s in elements)
+    else:
+        a=elements
+    els=(',\n'+ts).join(a)
+    if is_class:
+        return 'enum class\n{\n'+ts+els+'\n};\n'
+    else:
+        return 'enum \n{\n'+ts+els+'\n};\n'
 
 def struct(name, args, ts=' '*4):
-	text=[]
-	for f in args:
-		if not f.value:
-			text.append(f.type+' '+f.name)
-		else:
-			text.append(f.type+' '+f.name+' = '+f.value)
-	return 'struct '+name+'\n{\n'+ts+(';///> \n'+ts).join(text)+'\n};\n'
+    text=[]
+    for f in args:
+        if not f.value:
+            text.append(f.type+' '+f.name)
+        else:
+            text.append(f.type+' '+f.name+' = '+f.value)
+    return 'struct '+name+'\n{\n'+ts+(';///> \n'+ts).join(text)+'\n};\n'
 
 def switch(enum_vars, enum_name='', ts=' '*4):
-	body=''
-	if enum_name=='':
-		for v in enum_vars:
-			body=body+'case '+v+':\n'+ts+'{\n'+ts*2+'\n'+ts*2+'break;\n'+ts+'\n}\n'
-	else:
-		for v in enum_vars:
-			body=body+'case '+enum_name+'::'+v+':\n'+ts+'{\n'+ts*2+'\n'+ts*2+'break;\n'+ts+'\n}\n'
-	return 'switch ('+var_name+')\n{'+ts+body+'\n'+ts+'default:\n'+ts+'{'+ts*2+'\n'+ts+'}\n}\n'
+    body=''
+    if enum_name=='':
+        for v in enum_vars:
+            body=body+'case '+v+':\n'+ts+'{\n'+ts*2+'\n'+ts*2+'break;\n'+ts+'\n}\n'
+    else:
+        for v in enum_vars:
+            body=body+'case '+enum_name+'::'+v+':\n'+ts+'{\n'+ts*2+'\n'+ts*2+'break;\n'+ts+'\n}\n'
+    return 'switch ('+var_name+')\n{'+ts+body+'\n'+ts+'default:\n'+ts+'{'+ts*2+'\n'+ts+'}\n}\n'
 
-'''cycles=['for', 'while', 'do']
-changers=['switch', '>', '<', '==', '!']
+#TODO IT
+cycles=['for', 'while', 'do']
 def func_body(line, args, class_fields):
     line=line.replace('\n','')
-    line=re.sub('[\t ]+',' ', line)
+    line=re.sub('\s+',' ', line)
     ops=line.split(' ')
-'''	
+    def rec(opses):
+        v=opses[0]
+        if v in cycles or opses=='switch':
+            end=rec(opses[1:])
+            return gen_code(v, end, args, class_fields, body)
+        else:
+            return v
 
 def to_camel(snake_str):
     def __init__(self, **kwargs):
