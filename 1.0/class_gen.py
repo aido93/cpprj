@@ -39,6 +39,8 @@ class arg:
     type=None
     name=''
     value=None
+    def __str__(self):
+        return str(self.type)+' '+self.name+' = '+str(self.value)
 
 class method:
     def __init__(self, **kwargs):
@@ -56,6 +58,23 @@ class parents:
     type='public'
     name=''
     template_types=None
+
+def fields(line):
+    line=line.replace('\n','')
+    line=line.replace(';','; ')
+    line=re.sub('[\t ]+',' ', line)
+    args=line.split('; ')
+    ret=[]
+    for a in args:
+        p=a.split(' ')
+        t=' '.join(p[:-1])
+        kv=p[-1].split('=')
+        if len(kv)==1:
+            ret.append(arg(type=t, name=kv[0]))
+        elif len(kv)==2:
+            ret.append(arg(type=t, name=kv[0], value=kv[1]))
+    del ret[-1]
+    return ret
 
 def to_camel(snake_str):
     def __init__(self, **kwargs):
@@ -118,8 +137,8 @@ def add_methods(class_name, template_types, methods, ts, class_fields):
             hpp=hpp+ts*2+" * \\brief Setter-method for "+p.args[0].name+" class field \n"
             hpp=hpp+ts*2+" * \\return None\n*/\n"
         elif p.hint=='getter':
-            hpp=hpp+ts*2+" * \\brief Getter-method for "+p.args[0].name+" class field \n"
-            hpp=hpp+ts*2+" * \\return Value of the "+p.args[0].name+"* class field\n"+2*ts+"*/\n"
+            hpp=hpp+ts*2+" * \\brief Getter-method for "+p.name.replace('get','')+" class field \n"
+            hpp=hpp+ts*2+" * \\return Value of the "+p.name.replace('get','')+"* class field\n"+2*ts+"*/\n"
         elif p.hint=='copy':
             if p.return_type==None:
                 hpp=hpp+ts*2+" * \\brief Copy constructor"
@@ -177,13 +196,14 @@ def add_methods(class_name, template_types, methods, ts, class_fields):
                 raise Exception("constructor cannot have type")
             hpp=hpp+p.return_type+' '
         hpp=hpp+p.name+' ('
-        i=1
-        for v in p.args:
-            hpp=hpp+v.type+" "+v.name
-            if v.value and v.value!='':
-                hpp=hpp+"="+v.value
-            if i<len(p.args):
-                hpp=hpp+', '
+        if p.args:
+            i=1
+            for v in p.args:
+                hpp=hpp+v.type+" "+v.name
+                if v.value and v.value!='':
+                    hpp=hpp+"="+v.value
+                if i<len(p.args):
+                    hpp=hpp+', '
         hpp=hpp+")"
         if p.post_modifier:
             if p.post_modifier in post_method_modifiers:
@@ -214,14 +234,15 @@ def add_methods(class_name, template_types, methods, ts, class_fields):
                 if p.return_type:
                     cpp=cpp+p.return_type+' '
                 cpp=cpp+templated_class+"::"+p.name+' ('
-                i=1
-                for v in p.args:
-                    if v.name:
-                        cpp=cpp+v.type+" "+v.name
-                    else:
-                        cpp=cpp+v.type+" x"
-                    if i<len(p.args):
-                        cpp=cpp+', '
+                if p.args:
+                    i=1
+                    for v in p.args:
+                        if v.name:
+                            cpp=cpp+v.type+" "+v.name
+                        else:
+                            cpp=cpp+v.type+" x"
+                        if i<len(p.args):
+                            cpp=cpp+', '
                         
                 cpp=cpp+")"
                 if p.post_modifier:
@@ -229,10 +250,11 @@ def add_methods(class_name, template_types, methods, ts, class_fields):
                 if p.return_type==None and p.name[0]!='~' and class_fields and p.hint!='move' and p.hint!='copy': # Custom constructor
                     cpp=cpp+': \n'+ts
                     init_list=[]
-                    for constr_arg in p.args:
-                        for var in class_fields:
-                            if similar(constr_arg, var)>=0.8:
-                                init_list.append(prot+'('+constr_arg+')')
+                    if p.args:
+                        for constr_arg in p.args:
+                            for var in class_fields:
+                                if similar(constr_arg.name, var.name)>=0.8:
+                                    init_list.append(var.name+'('+str(constr_arg.name)+')')
                     cpp=cpp+('\n'+ts).join(init_list)
                 cpp=cpp+"\n{\n"+ts
                 if p.body:
@@ -253,14 +275,15 @@ def add_methods(class_name, template_types, methods, ts, class_fields):
                 if p.return_type:
                     cpp_template=cpp_template+p.type+' '
                 cpp_template=cpp_template+templated_class+"::"+p.name+' ('
-                i=1
-                for v in p.args:
-                    if v.name:
-                        cpp_template=cpp_template+v.type+" "+v.name
-                    else:
-                        cpp_template=cpp_template+v.type+" x"
-                    if i<len(p.args):
-                        cpp_template=cpp_template+', '
+                if p.args:
+                    i=1
+                    for v in p.args:
+                        if v.name:
+                            cpp_template=cpp_template+v.type+" "+v.name
+                        else:
+                            cpp_template=cpp_template+v.type+" x"
+                        if i<len(p.args):
+                            cpp_template=cpp_template+', '
                 cpp_template=cpp_template+")"
                 if p.post_modifier:
                     cpp_template=cpp_template+" "+p.post_modifier
@@ -281,7 +304,7 @@ def create_class(class_name,template_types=None, class_parents=None,
     autodetected=[]
     if isinstance(private_vars, list):
         for v in private_vars:
-            for inc, t in stl:
+            for inc, t in stl.items():
                 if any("std::"+substring in v.type for substring in t):
                     if inc not in autodetected:
                         autodetected.append(inc)
@@ -295,7 +318,7 @@ def create_class(class_name,template_types=None, class_parents=None,
                                 autodetected.append(file)
     if isinstance(protected_vars, list):
         for v in protected_vars:
-            for inc, t in stl:
+            for inc, t in stl.items():
                 if any("std::"+substring in v.type for substring in t):
                     if inc not in autodetected:
                         autodetected.append(inc)
@@ -347,7 +370,7 @@ def create_class(class_name,template_types=None, class_parents=None,
                 setter=to_snake("set_"+v.name)
                 getter=to_snake("get_"+v.name)
             if protected_getters:
-                sgetters.append(method( type=v.type,
+                sgetters.append(method( return_type=v.type,
                                         name=getter,
                                         args=None,
                                         post_modifier="const",
@@ -355,7 +378,7 @@ def create_class(class_name,template_types=None, class_parents=None,
                                         hint='getter'))
             if protected_setters:
                 args=[arg(type="const "+v.type+'&', name='_'+v.name), ]
-                sgetters.append(method( type='void',
+                sgetters.append(method( return_type='void',
                                         name=setter,
                                         args=args,
                                         post_modifier=None,
@@ -370,15 +393,15 @@ def create_class(class_name,template_types=None, class_parents=None,
                 setter=to_snake("set_"+v.name)
                 getter=to_snake("get_"+v.name)
             if private_getters:
-                sgetters.append(method( type=v.type,
+                sgetters.append(method( return_type=v.type,
                                         name=getter,
                                         args=None,
                                         post_modifier="const",
                                         body="return "+v.name+";",
                                         hint='getter'))
             if private_setters:
-                args=[arg(type="const "+v.type+'&', name='_'+var_name),]
-                sgetters.append(method( type='void',
+                args=[arg(type="const "+v.type+'&', name='_'+v.name),]
+                sgetters.append(method( return_type='void',
                                         name=setter,
                                         args=args,
                                         post_modifier=None,
@@ -544,7 +567,8 @@ def bundle( class_name, author, email,
     if not template_types:
         cpp=header(class_name, author, email)+includes(quincs,src_autodetected,   bincs)+namespace(namespaces_name, cpp_gen, tabstop)
     #test=header(class_name, author, email)+gen_test(class_name)
-    return (hpp.replace('\n', os.linesep), cpp.replace('\\n', '\n'))
+    #return (hpp.replace('\n', os.linesep), cpp.replace('\\n', '\n'))
+    return (hpp, cpp)
 
 # TODO: Change maintainer to somebody from developers
 # TODO: Add simple variable checking to method body
@@ -552,3 +576,4 @@ def bundle( class_name, author, email,
 # TODO: Add loggers to methods
 # TODO: Add automatic test creation
 # TODO: Add common programming patterns
+# TODO: Add automatic client(C++)-server(django) generation
