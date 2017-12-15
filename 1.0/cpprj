@@ -4,27 +4,25 @@ set -e
 source $1
 name=`basename $1`
 echo $name
-mkdir $dir
+mkdir -p $dir/sources/{src,include,docs}
+mkdir -p $dir/{build,docs,deps}
 cp $1 $dir/.prj
-mkdir $dir/build
-mkdir $dir/src
-mkdir $dir/include
-mkdir $dir/docs
 if [ -n $test_dir ]; then
     mkdir $dir/$test_dir
 fi
-touch $dir/docs/dummy
-cd $dir
-cp /etc/cpprj/CMakeLists.txt .
-cp /etc/cpprj/Doxyfile .
-cp /etc/cpprj/$lic ./LICENSE
+cd $dir/sources
+CONFIG_DIR="/etc/cpprj"
+cp $CONFIG_DIR/CMakeLists.txt .
+cp $CONFIG_DIR/Doxyfile .
+cp $CONFIG_DIR/$lic ./LICENSE
+
 sed -i "s/\$prj_name/$name/" CMakeLists.txt
 sed -i "s/\$prj_name/$name/" Doxyfile
 
 if [ "$type" = "cli" ]; then 
-	cp /etc/cpprj/cli.cpp src/main.cpp  
+	cp $CONFIG_DIR/cli.cpp src/main.cpp  
 elif [ "$type" = "lib" ]; then
-	cp /etc/cpprj/lib.cpp src/main.cpp
+	cp $CONFIG_DIR/lib.cpp src/main.cpp
 fi
 
 d=$(date +%x\ %X)
@@ -41,3 +39,27 @@ sed -i "s|\$prj_name|$name|g"             CMakeLists.txt
 sed -i "s|\$cxx_flags|$cxx_flags|g"       CMakeLists.txt
 sed -i "s|\$cxx|$cxx|g"                   CMakeLists.txt
 sed -i "s|\$linker_flags|$linker_flags|g" CMakeLists.txt
+if [[ -n "$git_repo" ]]; then
+	git init .
+	cp .gitignore .
+	git remote add origin $git_repo
+	git config --local user.name $maintainer_name
+	git config --local user.name $maintainer_email
+	git add .
+	git commit -m "Initial commit"
+	git push origin master
+fi
+cd ../deps
+if [ ${#GIT_DEP[@]} -neq 0 ]; then
+	for repo in "${GIT_DEP[@]}"; do
+		git clone $repo;
+		echo "$repo downloaded"
+	done
+fi
+if [ ${#WGET_DEP[@]} -neq 0 ]; then
+	for package in "${WGET_DEP[@]}"; do
+		wget $package;
+		tar xf $package;
+		echo "$package downloaded"
+	done
+fi
