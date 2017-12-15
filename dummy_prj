@@ -1,13 +1,22 @@
-dir=
-lic=gplv2
-type=cli
-linker_flags="-static-libgcc -static-libstdc++"
-cxx=g++
-cxx_flags="-O2 -Wall -pedantic -march=native -std=c++14 -D_GNU"
-inc_dirs="include"
-lib_dirs=
-arch=x86_64
-cross_compile=
-auth=
-ver=1.0
+# Project description
 desc=""
+ver=1.0
+maintainer_email=""
+maintainer_name=""
+dir=""
+lic=gplv2
+
+# Project options
+type="cli" # May be cli/lib
+tabstop=4
+git=""
+test_dir="tests"
+
+# Compiler options
+cross_compile=
+arch=x86_64
+cxx=g++
+linker_flags="-static-libgcc -static-libstdc++"
+cxx_flags="-O2 -Wall -pedantic -std=c++14 -D_GNU"
+inc_dirs="include"
+lib_dirs=""
