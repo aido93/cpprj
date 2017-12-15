@@ -26,7 +26,7 @@ stl={
     'complex'               : [ "complex",]
 }
 
-pre_method_modifiers   = ['static', 'virtual', 'extern', 'friend']
+pre_method_modifiers   = ['static', 'inline', 'virtual', 'extern', 'friend']
 post_method_modifiers  = [  '=0', '=delete', '=default', 'const', 'const =0', 'const =delete', 'volatile', 
                             'const volatile', 'noexcept', 'override', 'final', '&', '&&']
 post_class_modifiers   = ['final', ]
