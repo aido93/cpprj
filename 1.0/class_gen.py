@@ -3,6 +3,7 @@ import os
 import re
 import json
 from difflib import SequenceMatcher
+from itertools import groupby
 
 stl={
     'containers'            : [ "vector","list","map","queue","deque","string","array","set","stack","forward_list","unordered_set","unordered_map"],
@@ -27,15 +28,18 @@ stl={
 }
 
 pre_method_modifiers   = ['static', 'virtual', 'extern', 'friend']
+pre_field_modifiers    = ['static', 'const', 'mutable']
+pre_var_modifiers      = ['static', 'const', 'extern']
 post_method_modifiers  = [  '=0', '=delete', '=default', 'const', 'const =0', 'const =delete', 'volatile', 
                             'const volatile', 'noexcept', 'override', 'final', '&', '&&']
 post_class_modifiers   = ['final', ]
-not_cpp_post_mod=['=delete', '=0', '=default']
-constructor_post_mod=['=delete', '=0', '=default', 'noexcept']
+not_cpp_post_mod     = ['=delete', '=0', '=default']
+constructor_post_mod = ['=delete', '=0', '=default', 'noexcept']
 
 class arg:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
+    pre_modifier=None
     type=None
     name=''
     value=None
@@ -103,6 +107,7 @@ def includes(quinc, autodetected, binc):
         for name in quinc:
             ret=ret+'#include "'+name+'"\n'
     if isinstance(autodetected, list):
+        print(autodetected)
         for name in autodetected:
             ret=ret+'#include <'+name+'>\n'
     if isinstance(binc, list):
@@ -135,10 +140,10 @@ def add_methods(class_name, template_types, methods, ts, class_fields):
         hpp=hpp+ts*2+"/**\n"
         if p.hint=='setter':
             hpp=hpp+ts*2+" * \\brief Setter-method for "+p.args[0].name+" class field \n"
-            hpp=hpp+ts*2+" * \\return None\n*/\n"
+            hpp=hpp+ts*2+" * \\return None\n"+ts*2+" */\n"
         elif p.hint=='getter':
-            hpp=hpp+ts*2+" * \\brief Getter-method for "+p.name.replace('get','')+" class field \n"
-            hpp=hpp+ts*2+" * \\return Value of the "+p.name.replace('get','')+"* class field\n"+2*ts+"*/\n"
+            hpp=hpp+ts*2+" * \\brief Getter-method for "+p.name.replace('get_','')+" class field \n"
+            hpp=hpp+ts*2+" * \\return Value of the "+p.name.replace('get_','')+"* class field\n"+2*ts+" */\n"
         elif p.hint=='copy':
             if p.return_type==None:
                 hpp=hpp+ts*2+" * \\brief Copy constructor"
@@ -306,7 +311,11 @@ def create_class(class_name,template_types=None, class_parents=None,
         for v in private_vars:
             for inc, t in stl.items():
                 if any("std::"+substring in v.type for substring in t):
-                    if inc not in autodetected:
+                    if inc=='containers':
+                        for substring in t:
+                            if "std::"+substring in v.type:
+                                autodetected.append(substring)
+                    elif inc not in autodetected:
                         autodetected.append(inc)
             else:
                 if v.type[0]=='Q' and len(v.type)!=1:
@@ -320,7 +329,11 @@ def create_class(class_name,template_types=None, class_parents=None,
         for v in protected_vars:
             for inc, t in stl.items():
                 if any("std::"+substring in v.type for substring in t):
-                    if inc not in autodetected:
+                    if inc=='containers':
+                        for substring in t:
+                            if "std::"+substring in v.type:
+                                autodetected.append(substring)
+                    elif inc not in autodetected:
                         autodetected.append(inc)
             else:
                 if v.type[0]=='Q' and len(v.type)!=1:
@@ -335,7 +348,11 @@ def create_class(class_name,template_types=None, class_parents=None,
             for v in func.args:
                 for inc, t in stl.items():
                     if any("std::"+substring in v.type for substring in t):
-                        if inc not in autodetected:
+                        if inc=='containers':
+                            for substring in t:
+                                if "std::"+substring in v.type:
+                                    autodetected.append(substring)
+                        elif inc not in autodetected:
                             autodetected.append(inc)
                 else:
                     if v.type[0]=='Q':
@@ -440,7 +457,8 @@ def create_class(class_name,template_types=None, class_parents=None,
         ret=ret+hpp2
         ret=ret+'\n'+ts*2
     ret=ret+"\n};\n\n"
-    return (autodetected, ret, cpp+cpp1+cpp2, cpp_template+cpp_template1+cpp_template2)
+    headers = [el for el, _ in groupby(sorted(autodetected))]
+    return (headers, ret, cpp+cpp1+cpp2, cpp_template+cpp_template1+cpp_template2)
 
 # vd=0 - not virtual
 # vd=1 - virtual
