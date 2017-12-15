@@ -236,6 +236,8 @@ def add_methods(class_name, template_types, methods, ts, class_fields):
                 is_template=True
                 cpp_template=cpp_template+"template <class "+', class '.join(p.template_args)+'>\n'
             if not is_template:
+                if p.pre_modifier=='static':
+                    cpp=cpp+'static '
                 if p.return_type:
                     cpp=cpp+p.return_type+' '
                 cpp=cpp+templated_class+"::"+p.name+' ('
@@ -301,6 +303,30 @@ def add_methods(class_name, template_types, methods, ts, class_fields):
             cpp=''
     return (hpp, cpp, cpp_template)
 
+def subtypes_autodetection(typ, deps_includes):
+    autodetected=[]
+    # Cleaning
+    t1=typ
+    for pre in pre_field_modifiers:
+        t1=re.sub(str(pre)+'[ \t]+', '', t1)
+    for inc, t in stl.items():
+        if any("std::"+substring in t1 for substring in t):
+            if inc=='containers':
+                for substring in t:
+                    if "std::"+substring in t1:
+                        autodetected.append(substring)
+            elif inc not in autodetected:
+                autodetected.append(inc)
+    if t1[0]=='Q' and len(t1)!=1:
+        del_templ=re.sub('<.*>', '', t1)
+        autodetected.append(del_templ)
+    elif isinstance(deps_includes, list):
+        for dep in deps_includes:
+            for file in os.walkdir(dep):
+                if "class "+t1 in open(file).read():
+                    autodetected.append(file)
+    return autodetected
+
 def create_class(class_name,template_types=None, class_parents=None,
                  private_vars=None,protected_vars=None, deps_includes=None,
                  private_setters=False, private_getters=False, protected_setters=False, protected_getters=False,
@@ -309,54 +335,13 @@ def create_class(class_name,template_types=None, class_parents=None,
     autodetected=[]
     if isinstance(private_vars, list):
         for v in private_vars:
-            for inc, t in stl.items():
-                if any("std::"+substring in v.type for substring in t):
-                    if inc=='containers':
-                        for substring in t:
-                            if "std::"+substring in v.type:
-                                autodetected.append(substring)
-                    elif inc not in autodetected:
-                        autodetected.append(inc)
-            else:
-                if v.type[0]=='Q' and len(v.type)!=1:
-                    autodetected.append(v.type)
-                elif isinstance(deps_includes, list):
-                    for dep in deps_includes:
-                        for file in os.walkdir(dep):
-                            if "class "+v.type in open(file).read():
-                                autodetected.append(file)
+            autodetected.extend(subtypes_autodetection(v.type, deps_includes))
     if isinstance(protected_vars, list):
         for v in protected_vars:
-            for inc, t in stl.items():
-                if any("std::"+substring in v.type for substring in t):
-                    if inc=='containers':
-                        for substring in t:
-                            if "std::"+substring in v.type:
-                                autodetected.append(substring)
-                    elif inc not in autodetected:
-                        autodetected.append(inc)
-            else:
-                if v.type[0]=='Q' and len(v.type)!=1:
-                    autodetected.append(v.type)
-                elif isinstance(deps_includes, list):
-                    for dep in deps_includes:
-                        for file in os.walkdir(dep):
-                            if "class "+v.type in open(file).read():
-                                autodetected.append(file)
+            autodetected.extend(subtypes_autodetection(v.type, deps_includes))
     if isinstance(public_methods, list):
         for func in public_methods:
-            for v in func.args:
-                for inc, t in stl.items():
-                    if any("std::"+substring in v.type for substring in t):
-                        if inc=='containers':
-                            for substring in t:
-                                if "std::"+substring in v.type:
-                                    autodetected.append(substring)
-                        elif inc not in autodetected:
-                            autodetected.append(inc)
-                else:
-                    if v.type[0]=='Q':
-                        autodetected.append(v.type)
+            autodetected.extend(subtypes_autodetection(v.type, deps_includes))
     ts=' '*tabstop
     ret="""/**
  * \\brief
@@ -394,13 +379,19 @@ def create_class(class_name,template_types=None, class_parents=None,
                                         body="return "+v.name+";",
                                         hint='getter'))
             if protected_setters:
-                args=[arg(type="const "+v.type+'&', name='_'+v.name), ]
-                sgetters.append(method( return_type='void',
-                                        name=setter,
-                                        args=args,
-                                        post_modifier=None,
-                                        body=v.name+" = _"+v.name+";",
-                                        hint='setter'))
+                t=v.type
+                if t.find('const ')==-1: 
+                    pm=None
+                    if t.find('static ')!=-1:
+                        t=t.replace('static ','')
+                        pm='static'
+                    args=[arg(type="const "+t+'&', name='_'+v.name), ]
+                    sgetters.append(method( return_type='void',
+                                            name=setter,
+                                            args=args,
+                                            post_modifier=None,
+                                            body=v.name+" = _"+v.name+";",
+                                            hint='setter'))
     if private_vars:
         for v in private_vars:
             if not snake_case:
@@ -417,13 +408,20 @@ def create_class(class_name,template_types=None, class_parents=None,
                                         body="return "+v.name+";",
                                         hint='getter'))
             if private_setters:
-                args=[arg(type="const "+v.type+'&', name='_'+v.name),]
-                sgetters.append(method( return_type='void',
-                                        name=setter,
-                                        args=args,
-                                        post_modifier=None,
-                                        body=v.name+" = _"+v.name+";",
-                                        hint='setter'))
+                t=v.type
+                if t.find('const ')==-1: 
+                    pm=None
+                    if t.find('static ')!=-1:
+                        t=t.replace('static ','')
+                        pm='static'
+                    args=[arg(type="const "+t+'&', name='_'+v.name),]
+                    sgetters.append(method( return_type='void',
+                                            name=setter,
+                                            args=args,
+                                            post_modifier=None,
+                                            pre_modifier=pm,
+                                            body=v.name+" = _"+v.name+";",
+                                            hint='setter'))
     class_fields=[]
     if isinstance(private_vars, list):
         class_fields.extend(private_vars)
