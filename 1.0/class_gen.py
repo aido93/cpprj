@@ -80,6 +80,58 @@ def fields(line):
     del ret[-1]
     return ret
 
+'''# for generating a bunch of dummy functions
+def funcs(line):
+    line=line.replace('\n','')
+    line=line.replace(';','; ')
+    line=re.sub('[\t ]+',' ', line)
+    funcs=line.split('; ')
+    ret=[]
+    for f in funcs:
+		pre, ta, t, n, args, post=re.parse(f)
+		a=fields(';'.join(args))
+		ret.append(method(template_args=ta, pre_modifier=pre, return_type=t, name=n, args=a, post_modifier=post))
+	return ret
+'''
+
+def enum(name, upper=False, ts=' '*4, is_class=True, elements=[]):
+	if upper:
+		a=(s.upper() for s in elements)
+	else:
+		a=elements
+	els=(',\n'+ts).join(a)
+	if is_class:
+		return 'enum class\n{'+ts+els+'\n};\n'
+	else:
+		return 'enum \n{'+ts+els+'\n};\n'
+
+def struct(name, args, ts=' '*4):
+	text=[]
+	for f in args:
+		if not f.value:
+			text.append(f.type+' '+f.name)
+		else:
+			text.append(f.type+' '+f.name+' = '+f.value)
+	return 'struct '+name+'\n{\n'+ts+(';///> \n'+ts).join(text)+'\n};\n'
+
+def switch(enum_vars, enum_name='', ts=' '*4):
+	body=''
+	if enum_name=='':
+		for v in enum_vars:
+			body=body+'case '+v+':\n'+ts+'{\n'+ts*2+'\n'+ts*2+'break;\n'+ts+'\n}\n'
+	else:
+		for v in enum_vars:
+			body=body+'case '+enum_name+'::'+v+':\n'+ts+'{\n'+ts*2+'\n'+ts*2+'break;\n'+ts+'\n}\n'
+	return 'switch ('+var_name+')\n{'+ts+body+'\n'+ts+'default:\n'+ts+'{'+ts*2+'\n'+ts+'}\n}\n'
+
+'''cycles=['for', 'while', 'do']
+changers=['switch', '>', '<', '==', '!']
+def func_body(line, args, class_fields):
+    line=line.replace('\n','')
+    line=re.sub('[\t ]+',' ', line)
+    ops=line.split(' ')
+'''	
+
 def to_camel(snake_str):
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
@@ -139,7 +191,7 @@ def add_methods(class_name, template_types, methods, ts, class_fields):
         # Create comments
         hpp=hpp+ts*2+"/**\n"
         if p.hint=='setter':
-            hpp=hpp+ts*2+" * \\brief Setter-method for "+p.args[0].name+" class field \n"
+            hpp=hpp+ts*2+" * \\brief Setter-method for "+p.args[0].name[1:]+" class field \n"
             hpp=hpp+ts*2+" * \\return None\n"+ts*2+" */\n"
         elif p.hint=='getter':
             hpp=hpp+ts*2+" * \\brief Getter-method for "+p.name.replace('get_','')+" class field \n"
@@ -485,10 +537,10 @@ def basic_class_content(class_name, template_types, dd=0, dc=0, dm=0, vd=0, cust
         ret.append(d1)
 
     if dc==0:
-        op=method(return_type=class_name, name="operator=", args=[arg(type="const "+class_name+"&"),])
+        op=method(return_type=templated_class, name="operator=", args=[arg(type="const "+class_name+"&"),])
         op.hint='copy'
         ret.append(op)
-        d1=method(name=templated_class)
+        d1=method(name=class_name)
         d1.hint='copy'
         d1.args=[arg(type="const "+class_name+"&"),]
         ret.append(d1)
