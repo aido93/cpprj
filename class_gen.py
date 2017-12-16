@@ -255,7 +255,7 @@ def namespace(namespaces_name, body, tabstop):
         return body
     return """/**
  * \\brief """+namespace_name+""" - 
- */
+ **/
 namespace """+namespace_name+"""
 {
 """+ts+body.replace('\n',ts)+"\n}; //"+namespace_name.upper()+" namespace\n"
@@ -319,7 +319,7 @@ def add_methods(class_name, template_types, methods, ts, class_fields):
         # Create method
         hpp=hpp+ts*2
         if p.template_args:
-            hpp=hpp+"template <class "+", class ".join(p.template_args)+'>\n'
+            hpp=hpp+"template <class "+", class ".join(p.template_args)+'>\n'+ts*2
         if p.pre_modifier:
             if p.pre_modifier in pre_method_modifiers:
                 if p.name==class_name:
@@ -491,7 +491,7 @@ def create_class(class_name,template_types=None, class_parents=None,
     ret="""/**
  * \\brief
  * \\details
- * */\n"""
+ **/\n"""
     if template_types:
         ret=ret+'template <class '+', class '.join(template_types)
         ret=ret+">\n"
