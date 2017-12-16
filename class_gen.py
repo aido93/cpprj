@@ -86,6 +86,7 @@ def funcs(line):
     line=line.replace(';','; ')
     line=re.sub('\s+',' ', line)
     funcs=line.split('; ')
+    funcs=[value for value in funcs if value]
     ret=[]
     for f in funcs:
         a=re.match('((?:.*)\s)+(\w+)(?:<(.*?)>)?\((.*?)\)(.*?)', f)
@@ -97,9 +98,11 @@ def funcs(line):
         else:
             pre=None
         name=a.group(2)
-        template_list=a.group(3).replace(',',', ')
-        template_list=re.sub('\s+',' ', template_list)
-        template_list=template_list.split(', ')
+        template_list=a.group(3)
+        if template_list:
+            template_list=template_list.replace(',',', ')
+            template_list=re.sub('\s+',' ', template_list)
+            template_list=template_list.split(', ')
         args=a.group(4).replace(',',', ')
         if args!='':
             args=re.sub('\s+',' ', args)
@@ -132,7 +135,7 @@ def funcs(line):
             new_args=None
         #now we cannot continue because of map<int, int, str> - this cannot be parsed correctly
         post_modifier=a.group(5)
-        if post_modifier!='' post_modifier not in post_method_modifiers:
+        if post_modifier!='' and post_modifier not in post_method_modifiers:
             raise Exception('Undefined post-modifier:'+post_modifier)
         ret.append(method(  template_args=template_list, 
                             pre_modifier=pre, 
@@ -143,16 +146,22 @@ def funcs(line):
     return ret
 
 def virtuals(line):
-    x=(f.pre_modifier='virtual' for f in funcs(line))
-    return x
+    l=funcs(line)
+    for func in l:
+        func.pre_modifier='virtual'
+    return l
 
 def statics(line):
-    x=(f.pre_modifier='static' for f in funcs(line))
-    return x
+    l=funcs(line)
+    for func in l:
+        func.pre_modifier='static'
+    return l
 
 def consts(line):
-    x=(f.post_modifier='const' for f in funcs(line))
-    return x
+    l=funcs(line)
+    for func in l:
+        func.pre_modifier='const'
+    return l
 
 def enum(name, upper=False, ts=' '*4, is_class=True, elements=[]):
     if upper:
@@ -225,7 +234,6 @@ def includes(quinc, autodetected, binc):
         for name in quinc:
             ret=ret+'#include "'+name+'"\n'
     if isinstance(autodetected, list):
-        print(autodetected)
         for name in autodetected:
             ret=ret+'#include <'+name+'>\n'
     if isinstance(binc, list):
@@ -292,10 +300,15 @@ def add_methods(class_name, template_types, methods, ts, class_fields):
         else:
             hpp=hpp+ts*2+" * \\brief \n"
             hpp=hpp+ts*2+" * \\details \n"
-            for v in p.template_args:
-                hpp=hpp+ts*2+" * \\param [in] "+v.name+" - "+". Default value is "+v.value+"\n"
-            for v in p.args:
-                hpp=hpp+ts*2+" * \\param [in] "+v.name+" - "+". Default value is "+v.value+"\n"
+            if p.template_args:
+                for v in p.template_args:
+                    hpp=hpp+ts*2+" * \\param [in] "+v+" is the type corresponding to \n"
+            if p.args:
+                for v in p.args:
+                    hpp=hpp+ts*2+" * \\param [in] "+v.name+" - "+"."
+                    if v.value:
+                        hpp+=" Default value is "+v.value
+                    hpp+="\n"
             if not p.return_type:
                 hpp=hpp+ts*2+" **/\n"
             elif p.return_type=='void':
@@ -385,7 +398,7 @@ def add_methods(class_name, template_types, methods, ts, class_fields):
                 if p.body:
                     cpp=cpp+p.body
                 elif p.return_type and p.hint!='move' and p.hint!='copy':
-                    cpp=cpp+p.type+' ret;\n'+ts+'\n'+ts+'return ret;'
+                    cpp=cpp+p.return_type+' ret;\n'+ts+'\n'+ts+'return ret;'
                 elif p.return_type and p.hint=='copy':
                     if p.args[0].name!='':
                         cpp=cpp+'if (this != &'+p.args[0].name+')\n'+ts+'{\n'
@@ -398,7 +411,7 @@ def add_methods(class_name, template_types, methods, ts, class_fields):
 
             else:
                 if p.return_type:
-                    cpp_template=cpp_template+p.type+' '
+                    cpp_template=cpp_template+p.return_type+' '
                 cpp_template=cpp_template+templated_class+"::"+p.name+' ('
                 if p.args:
                     i=1
@@ -425,8 +438,10 @@ def subtypes_autodetection(typ, deps_includes):
     autodetected=[]
     # Cleaning
     t1=typ
+    if not t1:
+        return autodetected
     for pre in pre_field_modifiers:
-        t1=re.sub(str(pre)+'[ \t]+', '', t1)
+        t1=re.sub(str(pre)+'\s+', '', t1)
     for inc, t in stl.items():
         if any("std::"+substring in t1 for substring in t):
             if inc=='containers':
@@ -457,9 +472,15 @@ def create_class(class_name,template_types=None, class_parents=None,
     if isinstance(protected_vars, list):
         for v in protected_vars:
             autodetected.extend(subtypes_autodetection(v.type, deps_includes))
-    if isinstance(public_methods, list):
-        for func in public_methods:
-            autodetected.extend(subtypes_autodetection(v.type, deps_includes))
+    if private_methods and  isinstance(private_methods, list):
+        for v in private_methods:
+            autodetected.extend(subtypes_autodetection(v.return_type, deps_includes))
+    if protected_methods and  isinstance(protected_methods, list):
+        for v in protected_methods:
+            autodetected.extend(subtypes_autodetection(v.return_type, deps_includes))
+    if public_methods and  isinstance(public_methods, list):
+        for v in public_methods:
+            autodetected.extend(subtypes_autodetection(v.return_type, deps_includes))
     ts=' '*tabstop
     ret="""/**
  * \\brief
