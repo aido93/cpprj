@@ -164,16 +164,18 @@ def consts(line):
         func.pre_modifier='const'
     return l
 
-def enum(name, upper=False, ts=' '*4, is_class=True, elements=[]):
+def enum(name, upper=False, ts=' '*4, is_class=True, elements=''):
+    elements=re.sub('\s+',' ', elements)
+    elements=elements.split(' ')
     if upper:
         a=(s.upper() for s in elements)
     else:
         a=elements
     els=(',\n'+ts).join(a)
     if is_class:
-        return 'enum class\n{\n'+ts+els+'\n};\n'
+        return 'enum class'+name+'\n{\n'+ts+els+'\n};\n'
     else:
-        return 'enum \n{\n'+ts+els+'\n};\n'
+        return 'enum '+name+'\n{\n'+ts+els+'\n};\n'
 
 def struct(name, args, ts=' '*4):
     text=[]
