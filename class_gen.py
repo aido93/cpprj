@@ -46,6 +46,13 @@ class arg:
     def __str__(self):
         return str(self.type)+' '+self.name+' = '+str(self.value)
 
+class enum_t:
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+    name=''
+    is_class=False
+    elements=[]
+
 class method:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
@@ -66,7 +73,7 @@ class parents:
 def fields(line):
     line=line.replace('\n','')
     line=line.replace(';','; ')
-    line=re.sub('[\t ]+',' ', line)
+    line=re.sub('\s+',' ', line)
     args=line.split('; ')
     ret=[]
     for a in args:
@@ -164,7 +171,18 @@ def consts(line):
         func.pre_modifier='const'
     return l
 
-def enum(name, upper=False, ts=' '*4, is_class=True, elements=''):
+def get_all_enums(text):
+    t=re.findall('enum\s(class)?\s(\w+)(?:[\s\n]*)\{\s*(.*?)\}\s*;', text.replace('\n',''))
+    ret={}
+    for en in t:
+        elements=re.sub('\s+', '', en[-1]).split(',')
+        if en[0]=='class':
+            ret.append(enum_t(is_class=True, name=en[1], elements=elements))
+        else:
+            ret.append(enum_t(is_class=False, name=en[0], elements=elements))
+    return ret
+
+def enum(name, elements, upper=False, is_class=True, ts=' '*4):
     elements=re.sub('\s+',' ', elements)
     elements=elements.split(' ')
     if upper:
@@ -173,7 +191,7 @@ def enum(name, upper=False, ts=' '*4, is_class=True, elements=''):
         a=elements
     els=(',\n'+ts).join(a)
     if is_class:
-        return 'enum class'+name+'\n{\n'+ts+els+'\n};\n'
+        return 'enum class '+name+'\n{\n'+ts+els+'\n};\n'
     else:
         return 'enum '+name+'\n{\n'+ts+els+'\n};\n'
 
