@@ -46,13 +46,6 @@ class arg:
     def __str__(self):
         return str(self.type)+' '+self.name+' = '+str(self.value)
 
-class enum_t:
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-    name=''
-    is_class=False
-    elements=[]
-
 class method:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
@@ -171,30 +164,6 @@ def consts(line):
         func.pre_modifier='const'
     return l
 
-def get_all_enums(text):
-    t=re.findall('enum\s(class)?\s(\w+)(?:[\s\n]*)\{\s*(.*?)\}\s*;', text.replace('\n',''))
-    ret={}
-    for en in t:
-        elements=re.sub('\s+', '', en[-1]).split(',')
-        if en[0]=='class':
-            ret.append(enum_t(is_class=True, name=en[1], elements=elements))
-        else:
-            ret.append(enum_t(is_class=False, name=en[0], elements=elements))
-    return ret
-
-def enum(name, elements, upper=False, is_class=True, ts=' '*4):
-    elements=re.sub('\s+',' ', elements)
-    elements=elements.split(' ')
-    if upper:
-        a=(s.upper() for s in elements)
-    else:
-        a=elements
-    els=(',\n'+ts).join(a)
-    if is_class:
-        return 'enum class '+name+'\n{\n'+ts+els+'\n};\n'
-    else:
-        return 'enum '+name+'\n{\n'+ts+els+'\n};\n'
-
 def struct(name, args, ts=' '*4):
     text=[]
     for f in args:
@@ -203,16 +172,6 @@ def struct(name, args, ts=' '*4):
         else:
             text.append(f.type+' '+f.name+' = '+f.value)
     return 'struct '+name+'\n{\n'+ts+(';///> \n'+ts).join(text)+'\n};\n'
-
-def switch(enum_vars, enum_name='', ts=' '*4):
-    body=''
-    if enum_name=='':
-        for v in enum_vars:
-            body=body+'case '+v+':\n'+ts+'{\n'+ts*2+'\n'+ts*2+'break;\n'+ts+'\n}\n'
-    else:
-        for v in enum_vars:
-            body=body+'case '+enum_name+'::'+v+':\n'+ts+'{\n'+ts*2+'\n'+ts*2+'break;\n'+ts+'\n}\n'
-    return 'switch ('+var_name+')\n{'+ts+body+'\n'+ts+'default:\n'+ts+'{'+ts*2+'\n'+ts+'}\n}\n'
 
 #TODO IT
 cycles=['for', 'while', 'do']
