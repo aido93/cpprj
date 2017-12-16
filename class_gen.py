@@ -89,7 +89,7 @@ def funcs(line):
     funcs=[value for value in funcs if value]
     ret=[]
     for f in funcs:
-        a=re.match('((?:.*)\s)+(\w+)(?:\s+)?(?:<(.*?)>)?(?:\s+)?\((.*?)\)(.*?)', f)
+        a=re.match('((?:.*)\s)+(\w+)\s*(?:<(.*?)>)?\s*\((.*?)\)(.*?)', f)
         return_type=re.sub('\s+',' ',a.group(1))
         pre=return_type.split(' ')
         if pre[0] in pre_method_modifiers:
@@ -129,8 +129,8 @@ def funcs(line):
                     else:
                         type_name=a1
                         value=None
-                    *type_f, name=type_name.split(' ')
-                    new_args.append(arg(type=' '.join(type_f), name=name, value=value))
+                    *type_f, var_name=type_name.split(' ')
+                    new_args.append(arg(type=' '.join(type_f), name=var_name, value=value))
                     temp=''
         else:
             new_args=None
