@@ -7,15 +7,15 @@ class enum_t:
     elements=[]
 
 def get_all_enums(text):
-    t=re.findall('enum\s(class)?\s(\w+)(?:[\s\n]*)\{\s*(.*?)\}\s*;', text.replace('\n',''))
+    t=re.findall('enum\s+(class)?\s*(\w+)(?:[\s\n]*)\{\s*(.*?)\}\s*;', text.replace('\n',''))
     ret={}
     for en in t:
         elements=re.sub('\s+', '', en[-1]).split(',')
         if en[0]=='class':
             ret[en[1]]=enum_t(is_class=True,  elements=elements)
         else:
-            if en[0]!='':
-                ret[en[0]]=enum_t(is_class=False, elements=elements)
+            if en[1]!='':
+                ret[en[1]]=enum_t(is_class=False, elements=elements)
             else:
                 if '' not in ret:
                     ret['']=elements
@@ -41,13 +41,21 @@ def switch(enums, enum_name, var_name, ts=' '*4):
     body=''
     if enum_name=='':
         for v in e:
-            body=body+'case '+v+':\n'+ts+'{\n'+ts*2+'\n'+ts*2+'break;\n'+ts+'}\n'
+            if '=' in v:
+                name=v.split('=')[0]
+            else:
+                name=v
+            body=body+'case '+name+':\n'+ts+'{\n'+ts*2+'\n'+ts*2+'break;\n'+ts+'}\n'
     else:
         prefix=''
         if e.is_class:
             prefix=enum_name+'::'
         for v in e.elements:
-            body=body+'case '+prefix+v+':\n'+ts+'{\n'+ts*2+'\n'+ts*2+'break;\n'+ts+'}\n'+ts
+            if '=' in v:
+                name=v.split('=')[0]
+            else:
+                name=v
+            body=body+'case '+prefix+name+':\n'+ts+'{\n'+ts*2+'\n'+ts*2+'break;\n'+ts+'}\n'+ts
     return 'switch ('+var_name+')\n{\n'+ts+body+'default:\n'+ts+'{\n'+ts*2+'\n'+ts+'}\n}\n'
 
 
