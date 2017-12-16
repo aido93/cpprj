@@ -89,7 +89,7 @@ def funcs(line):
     funcs=[value for value in funcs if value]
     ret=[]
     for f in funcs:
-        a=re.match('((?:.*)\s)+(\w+)(?:<(.*?)>)?\((.*?)\)(.*?)', f)
+        a=re.match('((?:.*)\s)+(\w+)(?:\s+)?(?:<(.*?)>)?(?:\s+)?\((.*?)\)(.*?)', f)
         return_type=re.sub('\s+',' ',a.group(1))
         pre=return_type.split(' ')
         if pre[0] in pre_method_modifiers:
@@ -97,6 +97,7 @@ def funcs(line):
             pre=pre[0]
         else:
             pre=None
+        return_type=return_type.rstrip()
         name=a.group(2)
         template_list=a.group(3)
         if template_list:
@@ -279,10 +280,10 @@ def add_methods(class_name, template_types, methods, ts, class_fields):
                     hpp=hpp+" is default \n"
                 else:
                     hpp=hpp+'\n'
-                hpp=hpp+ts*2+" * \\return Copy of object\n"+2*ts+"**/\n"
+                hpp=hpp+ts*2+" * \\return Copy of object\n"+2*ts+" **/\n"
             else:
                 hpp=hpp+ts*2+" * \\brief Copy operator=\n"
-                hpp=hpp+ts*2+" * \\return Copy of object\n"+2*ts+"**/\n"
+                hpp=hpp+ts*2+" * \\return Copy of object\n"+2*ts+" **/\n"
                 
         elif p.hint=='move':
             if p.return_type==None:
@@ -293,10 +294,10 @@ def add_methods(class_name, template_types, methods, ts, class_fields):
                     hpp=hpp+" is default \n"
                 else:
                     hpp=hpp+'\n'
-                hpp=hpp+ts*2+" * \\return Rvalue-reference to the object\n"+2*ts+"**/\n"
+                hpp=hpp+ts*2+" * \\return Rvalue-reference to the object\n"+2*ts+" **/\n"
             else:
                 hpp=hpp+ts*2+" * \\brief Move operator=\n"
-                hpp=hpp+ts*2+" * \\return Rvalue-reference to the object\n"+2*ts+"**/\n"
+                hpp=hpp+ts*2+" * \\return Rvalue-reference to the object\n"+2*ts+" **/\n"
         else:
             hpp=hpp+ts*2+" * \\brief \n"
             hpp=hpp+ts*2+" * \\details \n"
@@ -312,9 +313,9 @@ def add_methods(class_name, template_types, methods, ts, class_fields):
             if not p.return_type:
                 hpp=hpp+ts*2+" **/\n"
             elif p.return_type=='void':
-                hpp=hpp+ts*2+" * \\return None \n"+2*ts+"**/\n"
+                hpp=hpp+ts*2+" * \\return None \n"+2*ts+" **/\n"
             else:
-                hpp=hpp+ts*2+" * \\return  \n"+2*ts+"**/\n"
+                hpp=hpp+ts*2+" * \\return  \n"+2*ts+" **/\n"
         # Create method
         hpp=hpp+ts*2
         if p.template_args:
@@ -340,6 +341,7 @@ def add_methods(class_name, template_types, methods, ts, class_fields):
                     hpp=hpp+"="+v.value
                 if i<len(p.args):
                     hpp=hpp+', '
+                i=i+1
         hpp=hpp+")"
         if p.post_modifier:
             if p.post_modifier in post_method_modifiers:
@@ -381,6 +383,7 @@ def add_methods(class_name, template_types, methods, ts, class_fields):
                             cpp=cpp+v.type+" x"
                         if i<len(p.args):
                             cpp=cpp+', '
+                        i=i+1
                         
                 cpp=cpp+")"
                 if p.post_modifier:
@@ -397,7 +400,7 @@ def add_methods(class_name, template_types, methods, ts, class_fields):
                 cpp=cpp+"\n{\n"+ts
                 if p.body:
                     cpp=cpp+p.body
-                elif p.return_type and p.hint!='move' and p.hint!='copy':
+                elif p.return_type and p.return_type!='void' and p.hint!='move' and p.hint!='copy':
                     cpp=cpp+p.return_type+' ret;\n'+ts+'\n'+ts+'return ret;'
                 elif p.return_type and p.hint=='copy':
                     if p.args[0].name!='':
@@ -422,13 +425,16 @@ def add_methods(class_name, template_types, methods, ts, class_fields):
                             cpp_template=cpp_template+v.type+" x"
                         if i<len(p.args):
                             cpp_template=cpp_template+', '
-                cpp_template=cpp_template+")"
+                        i=i+1
+                cpp_template+=")"
                 if p.post_modifier:
                     cpp_template=cpp_template+" "+p.post_modifier
+                cpp_template+="\n{\n"+ts
                 if p.body:
-                    cpp_template=cpp_template+"\n{"+ts+p.body+"\n}\n"
-                elif p.return_type:
-                    cpp_template=cpp_template+'\n{'+ts+p.return_type+' ret;\n'+ts+'\n'+ts+'return ret;\n}\n'
+                    cpp_template+=p.body
+                elif p.return_type and p.return_type!='void':
+                    cpp_template+=p.return_type+' ret;\n'+ts+'\n'+ts+'return ret;'
+                cpp_template+='\n}\n'
         if template_types and  isinstance(template_types,list):
             cpp_template=cpp_template+cpp
             cpp=''
