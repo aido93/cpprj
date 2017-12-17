@@ -2,7 +2,6 @@ import time
 import os
 import re
 import json
-from difflib import SequenceMatcher
 from itertools import groupby
 from functions import arg, method, add_methods
 
