@@ -31,7 +31,8 @@ def gen_struct(name, fields, ts=4*' '):
     return 'struct '+name+'\n{\n'+ts+(';///> \n'+ts).join(text)+';///> \n};\n'
 
 def flags(name, line):
-    fields=line.split(' ')
+	fields=re.sub('\s+', ' ', line)
+    fields=fields.split(' ')
     ff=[]
     for f in fields:
         if '=' in f:
