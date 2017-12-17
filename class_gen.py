@@ -164,15 +164,6 @@ def consts(line):
         func.pre_modifier='const'
     return l
 
-def struct(name, args, ts=' '*4):
-    text=[]
-    for f in args:
-        if not f.value:
-            text.append(f.type+' '+f.name)
-        else:
-            text.append(f.type+' '+f.name+' = '+f.value)
-    return 'struct '+name+'\n{\n'+ts+(';///> \n'+ts).join(text)+'\n};\n'
-
 #TODO IT
 cycles=['for', 'while', 'do']
 def func_body(line, args, class_fields):
