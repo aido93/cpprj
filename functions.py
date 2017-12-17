@@ -225,13 +225,13 @@ def func_body(line, args, class_fields):
         else:
             return v
 
-def create_comments(methods, ts=' '*4):
+def create_comments(methods):
     ret={}
     i=1
     for p in methods:
         if not(p.hint=='setter' or p.hint=='getter'):
             hpp=''
-            hpp+=(ts*2+"/**\n"+ts*2+" * \\brief ")
+            hpp+=("/**\n * \\brief ")
             if p.return_type==None: # Constructors and destructors
                 if p.hint=='copy':
                     hpp+="Copy constructor"
@@ -244,16 +244,16 @@ def create_comments(methods, ts=' '*4):
                     hpp+=" is deleted because "
                 elif p.post_modifier=='=default':
                     hpp+=" is default"
-                hpp+=('\n'+ts*2+" * \\details \n")
+                hpp+=('\n * \\details \n')
     
                 if p.args and p.hint!='copy' and p.hint!='move':
                     for a in p.args:
-                        hpp+=(ts*2+" * \\param[in] "+a.name+' - \n')
+                        hpp+=(" * \\param[in] "+a.name+' - \n')
 
                 if p.hint=='copy':
-                    hpp+=(ts*2+" * \\return Copy of object\n")
+                    hpp+=(" * \\return Copy of object\n")
                 elif p.hint=='move':
-                       hpp+=(ts*2+" * \\return Rvalue-reference to the object\n")
+                       hpp+=(" * \\return Rvalue-reference to the object\n")
             else:
                 if p.hint=='copy':
                     hpp+=("Copy operator=")
@@ -264,27 +264,27 @@ def create_comments(methods, ts=' '*4):
                        hpp=hpp+" is deleted because "
                 elif p.post_modifier=='=default':
                     hpp=hpp+" is default"
-                hpp+=('\n'+ts*2+" * \\details \n")
+                hpp+=('\n * \\details \n')
                 
                 if p.template_args:
                        for v in p.template_args:
-                           hpp=hpp+ts*2+" * \\param [in] "+v+" is the type corresponding to \n"
+                           hpp+=" * \\param [in] "+v+" is the type corresponding to \n"
                 if p.args and p.hint!='copy' and p.hint!='move':
                        for v in p.args:
-                           hpp=hpp+ts*2+" * \\param [in] "+v.name+" - "+"."
+                           hpp+=" * \\param [in] "+v.name+" - "+"."
                            if v.value:
                                hpp+=" Default value is "+v.value
                            hpp+="\n"
 
                 if p.hint=='copy':
-                    hpp+=(ts*2+" * \\return Copy of object\n")
+                    hpp+=(" * \\return Copy of object\n")
                 elif p.hint=='move':
-                    hpp+=(ts*2+" * \\return Rvalue-reference to the object\n")
+                    hpp+=(" * \\return Rvalue-reference to the object\n")
                 elif p.return_type=='void':
-                    hpp+=(ts*2+" * \\return None \n")
+                    hpp+=(" * \\return None \n")
                 else:
-                    hpp+=(ts*2+" * \\return  \n")
-            hpp+=(ts*2+' **/\n')
+                    hpp+=(" * \\return  \n")
+            hpp+=(' **/\n')
             ret[i]=hpp
         i=i+1
     return ret
@@ -295,12 +295,12 @@ def add_methods(class_name, template_types, methods, class_fields, ts=' '*4, del
     cpp_template=""
     c=[]
     if not del_comments:
-        c=create_comments(methods, ts)
+        c=create_comments(methods)
     i=1
     for m in methods:
         hpp+=ts*2
         if c and i in c:
-            hpp+=c[i]
+            hpp+=c[i].replace('\n', '\n'+ts)
         hpp+='\n'
         hpp+=m.decl()
         hpp+='\n'
@@ -317,9 +317,9 @@ def add_methods(class_name, template_types, methods, class_fields, ts=' '*4, del
                 is_template=True
                 cpp_template=cpp_template+"template <class "+', class '.join(m.template_args)+'>\n'
             if not is_template:
-                cpp+=m.impl(ts)
+                cpp+=m.impl(class_fields=class_fields)
             else:
-                cpp_template+=m.impl(ts)
+                cpp_template+=m.impl(class_fields=class_fields)
         if template_types and  isinstance(template_types,list):
             cpp_template=cpp_template+cpp
             cpp=''
