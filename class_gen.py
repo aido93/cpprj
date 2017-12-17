@@ -31,8 +31,6 @@ stl={
 pre_field_modifiers    = ['static', 'const', 'mutable']
 pre_var_modifiers      = ['static', 'const', 'extern']
 post_class_modifiers   = ['final', ]
-not_cpp_post_mod     = ['=delete', '=0', '=default']
-constructor_post_mod = ['=delete', '=0', '=default', 'noexcept']
 
 class parents:
     type='public'

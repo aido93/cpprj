@@ -1,5 +1,7 @@
 import re
 
+not_cpp_post_mod     = ['=delete', '=0', '=default']
+constructor_post_mod = ['=delete', '=0', '=default', 'noexcept']
 pre_func_modifiers     = [  'static', 'inline', 'extern']
 post_func_modifiers    = []
 pre_method_modifiers   = [  'static', 'virtual', 'friend']
@@ -22,17 +24,34 @@ class arg:
         return a
 
 class method:
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
     template_args=[]
     pre_modifier=None
     return_type=None
+	class_name=''
     name=''
     args=[]
     post_modifier=None
     body=None
     hint=''
-    def __str__(self):
+    
+	def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+		if self.pre_modifier:
+            if self.pre_modifier in pre_method_modifiers:
+                if self.name==class_name:
+                    raise Exception("constructor cannot have pre-modifiers")
+            else:
+                raise Exception("Undefined pre-modifier: "+str(self.pre_modifier))
+        if self.return_type and self.name==self.class_name:
+                raise Exception("constructor cannot have type")
+        if self.post_modifier:
+            if self.post_modifier in post_method_modifiers:
+                if self.name==self.class_name and self.post_modifier not in constructor_post_mod:
+                    raise Exception("constructor cannot be "+str(self.post_modifier))
+            else:
+                raise Exception("Undefined post-modifier: "+str(self.post_modifier))
+    
+	def decl(self):
         a=''
         i=1
         for x in self.args:
@@ -42,12 +61,59 @@ class method:
             i=i+1
         ret=''
         if self.template_args:
-            ret+='template <class '+', class '.join(self.template_args)+'>'
+            ret+='template <class '+', class '.join(self.template_args)+'>\n'
+        if self.pre_modifier:
+            ret+=self.pre_modifier
         if self.return_type:
             ret+=self.return_type
         ret+=self.name+' ('+a+')'
         if self.post_modifier:
             ret+=self.post_modifier
+		if self.hint=='getter' or self.hint=='setter':
+			ret+='{ '+body+' }'
+		else:
+			ret+=';'
+        return ret
+    def impl(self, ts=' '*4):
+        ret=''
+		if self.hint=='getter' or self.hint=='setter':
+			return ret
+        a=''
+        i=1
+		if self.args:
+            for v in self.args:
+				if v.pre_modifier:
+					ret+=(v.pre_modifier+' ')
+                if v.name:
+                    ret+=(v.type+" "+v.name)
+                else:
+                    ret+=(v.type+" x")
+                if i<len(self.args):
+                    ret+=', '
+                i=i+1
+        if self.template_args:
+            ret+='template <class '+', class '.join(self.template_args)+'>\n'
+        if self.pre_modifier=='static':
+            ret+='static '
+        if self.return_type:
+            ret+=self.return_type
+		if self.class_name!='':
+			ret+=self.class_name+'::'
+        ret+=self.name+' ('+a+')'
+        if self.post_modifier:
+            ret+=self.post_modifier
+		ret+='\n{\n'+ts
+		if self.body:
+			ret+=body
+        elif self.return_type and self.return_type!='void' and self.hint!='move' and self.hint!='copy':
+            ret+=self.return_type+' ret;\n'+ts+'\n'+ts+'return ret;'
+        elif self.return_type and self.hint=='copy':
+            if self.args[0].name!='':
+                ret+=('if (this != &'+self.args[0].name+')\n'+ts+'{\n')
+            else:
+                ret+=('if (this != &x)\n'+ts+'{\n')
+            ret+=(ts*2+'\n'+ts+'}\n'+ts+'return *this;')
+		ret+='\n}'
         return ret
 
 # for generating a bunch of dummy functions
@@ -62,7 +128,7 @@ def funcs(line):
         a=re.match('((?:.*)\s)+(\w+)\s*(?:<(.*?)>)?\s*\((.*?)\)(.*?)', f)
         return_type=re.sub('\s+',' ',a.group(1))
         pre=return_type.split(' ')
-        if pre[0] in pre_method_modifiers:
+        if pre[0] in pre_method_modifiers or pre[0] in pre_func_modifiers:
             return_type=pre[1:]
             pre=pre[0]
         else:
@@ -100,13 +166,17 @@ def funcs(line):
                         type_name=a1
                         value=None
                     *type_f, var_name=type_name.split(' ')
-                    new_args.append(arg(type=' '.join(type_f), name=var_name, value=value))
+					pre_mod=None
+					if type_f[0]=='const':
+						pre_mod='const'
+						type_f=type_f[1:]
+                    new_args.append(arg(pre_modifier=pre_mod, type=' '.join(type_f), name=var_name, value=value))
                     temp=''
         else:
             new_args=None
         #now we cannot continue because of map<int, int, str> - this cannot be parsed correctly
         post_modifier=a.group(5)
-        if post_modifier!='' and post_modifier not in post_method_modifiers:
+        if post_modifier!='' and not (post_modifier in post_method_modifiers or post_modifier in post_func_modifiers):
             raise Exception('Undefined post-modifier:'+post_modifier)
         ret.append(method(  template_args=template_list, 
                             pre_modifier=pre, 
@@ -136,101 +206,86 @@ def func_body(line, args, class_fields):
         else:
             return v
 
-def add_methods(class_name, template_types, methods, ts, class_fields):
+def create_comments(methods, ts=' '*4)
+	ret={}
+	i=1
+	for p in methods:
+		if not(p.hint=='setter' or p.hint=='getter'):
+			hpp=''
+			hpp+=(ts*2+"/**\n"+ts*2+" * \\brief ")
+        	if p.return_type==None: # Constructors and destructors
+        		if p.hint=='copy':
+                	hpp+="Copy constructor"
+		    	elif p.hint=='move':
+    	    	    hpp+="Move constructor"
+				elif p.name[0]=='~':
+        		    hpp+="Destructor"
+
+		        if p.post_modifier=='=delete':
+    		        hpp+=" is deleted because "
+        		elif p.post_modifier=='=default':
+            		hpp+=" is default"
+	            hpp+=('\n'+ts*2+" * \\details \n")
+	
+				if p.args and p.hint!='copy' and p.hint!='move':
+					for a in p.args:
+            			hpp+=(ts*2+" * \\param[in] "+a.name+' - \n')
+
+	        	if p.hint=='copy':
+		            hpp+=(ts*2+" * \\return Copy of object\n")
+	    		elif p.hint=='move':
+            	   	hpp+=(ts*2+" * \\return Rvalue-reference to the object\n")
+			else:
+    	    	if p.hint=='copy':
+        	        hpp+=("Copy operator=")
+	    		elif p.hint=='move':
+        	    	hpp+=("Move operator=")
+            
+				if p.post_modifier=='=delete':
+    	           	hpp=hpp+" is deleted because "
+	    	    elif p.post_modifier=='=default':
+    	    	    hpp=hpp+" is default"
+	            hpp+=('\n'+ts*2+" * \\details \n")
+				
+        	    if p.template_args:
+            	   	for v in p.template_args:
+                	   	hpp=hpp+ts*2+" * \\param [in] "+v+" is the type corresponding to \n"
+				if p.args and p.hint!='copy' and p.hint!='move':
+    	           	for v in p.args:
+        	           	hpp=hpp+ts*2+" * \\param [in] "+v.name+" - "+"."
+            	       	if v.value:
+                	       	hpp+=" Default value is "+v.value
+                   		hpp+="\n"
+
+	        	if p.hint=='copy':
+		            hpp+=(ts*2+" * \\return Copy of object\n")
+	    		elif p.hint=='move':
+            	   	hpp+=(ts*2+" * \\return Rvalue-reference to the object\n")
+		        elif p.return_type=='void':
+    		        hpp+=(ts*2+" * \\return None \n"
+        		else:
+            	    hpp+=(ts*2+" * \\return  \n")
+	    	hpp+=(ts*2+' **/\n')
+			ret[i]=hpp
+		i=i+1
+	return ret
+
+def add_methods(class_name, template_types, methods, class_fields, ts=' '*4, del_comments=False):
     hpp=""
-    for p in methods:
-        # Create comments
-        hpp=hpp+ts*2+"/**\n"
-        if p.hint=='setter':
-            hpp=hpp+ts*2+" * \\brief Setter-method for "+p.args[0].name[1:]+" class field \n"
-            hpp=hpp+ts*2+" * \\return None\n"+ts*2+" */\n"
-        elif p.hint=='getter':
-            hpp=hpp+ts*2+" * \\brief Getter-method for "+p.name.replace('get_','')+" class field \n"
-            hpp=hpp+ts*2+" * \\return Value of the "+p.name.replace('get_','')+"* class field\n"+2*ts+" */\n"
-        elif p.hint=='copy':
-            if p.return_type==None:
-                hpp=hpp+ts*2+" * \\brief Copy constructor"
-                if p.post_modifier=='=delete':
-                    hpp=hpp+" is deleted because \n"
-                elif p.post_modifier=='=default':
-                    hpp=hpp+" is default \n"
-                else:
-                    hpp=hpp+'\n'
-                hpp=hpp+ts*2+" * \\return Copy of object\n"+2*ts+" **/\n"
-            else:
-                hpp=hpp+ts*2+" * \\brief Copy operator=\n"
-                hpp=hpp+ts*2+" * \\return Copy of object\n"+2*ts+" **/\n"
-                
-        elif p.hint=='move':
-            if p.return_type==None:
-                hpp=hpp+ts*2+" * \\brief Move constructor"
-                if p.post_modifier=='=delete':
-                    hpp=hpp+" is deleted because \n"
-                elif p.post_modifier=='=default':
-                    hpp=hpp+" is default \n"
-                else:
-                    hpp=hpp+'\n'
-                hpp=hpp+ts*2+" * \\return Rvalue-reference to the object\n"+2*ts+" **/\n"
-            else:
-                hpp=hpp+ts*2+" * \\brief Move operator=\n"
-                hpp=hpp+ts*2+" * \\return Rvalue-reference to the object\n"+2*ts+" **/\n"
-        else:
-            hpp=hpp+ts*2+" * \\brief \n"
-            hpp=hpp+ts*2+" * \\details \n"
-            if p.template_args:
-                for v in p.template_args:
-                    hpp=hpp+ts*2+" * \\param [in] "+v+" is the type corresponding to \n"
-            if p.args:
-                for v in p.args:
-                    hpp=hpp+ts*2+" * \\param [in] "+v.name+" - "+"."
-                    if v.value:
-                        hpp+=" Default value is "+v.value
-                    hpp+="\n"
-            if not p.return_type:
-                hpp=hpp+ts*2+" **/\n"
-            elif p.return_type=='void':
-                hpp=hpp+ts*2+" * \\return None \n"+2*ts+" **/\n"
-            else:
-                hpp=hpp+ts*2+" * \\return  \n"+2*ts+" **/\n"
-        # Create method
-        hpp=hpp+ts*2
-        if p.template_args:
-            hpp=hpp+"template <class "+", class ".join(p.template_args)+'>\n'+ts*2
-        if p.pre_modifier:
-            if p.pre_modifier in pre_method_modifiers:
-                if p.name==class_name:
-                    raise Exception("constructor cannot have pre-modifiers")
-                else:
-                    hpp=hpp+p.pre_modifier+' '
-            else:
-                raise Exception("Undefined pre-modifier: "+str(p.pre_modifier))
-        if p.return_type:
-            if p.name==class_name:
-                raise Exception("constructor cannot have type")
-            hpp=hpp+p.return_type+' '
-        hpp=hpp+p.name+' ('
-        if p.args:
-            i=1
-            for v in p.args:
-                hpp=hpp+v.type+" "+v.name
-                if v.value and v.value!='':
-                    hpp=hpp+"="+v.value
-                if i<len(p.args):
-                    hpp=hpp+', '
-                i=i+1
-        hpp=hpp+")"
-        if p.post_modifier:
-            if p.post_modifier in post_method_modifiers:
-                if p.name==class_name and p.post_modifier not in constructor_post_mod:
-                    raise Exception("constructor cannot be "+str(p.post_modifier))
-                else:
-                    hpp=hpp+" "+p.post_modifier
-            else:
-                raise Exception("Undefined post-modifier: "+str(p.post_modifier))
-        hpp=hpp+";\n\n"
-    # create src
     cpp=""
     cpp_template=""
+	c=[]
+    if not del_comments:
+		c=create_comments(methods, ts)
+    i=1
+	for m in methods:
+        hpp+=ts*2
+		if c and i in c:
+			hpp+=c[i]
+		hpp+='\n'
+        hpp+=m.decl()
+		hpp+='\n'
+    	i=i+1
     def similar(a, b):
         return SequenceMatcher(None, a, b).ratio()
     templated_class=class_name
@@ -245,72 +300,9 @@ def add_methods(class_name, template_types, methods, ts, class_fields):
                 is_template=True
                 cpp_template=cpp_template+"template <class "+', class '.join(p.template_args)+'>\n'
             if not is_template:
-                if p.pre_modifier=='static':
-                    cpp=cpp+'static '
-                if p.return_type:
-                    cpp=cpp+p.return_type+' '
-                cpp=cpp+templated_class+"::"+p.name+' ('
-                if p.args:
-                    i=1
-                    for v in p.args:
-                        if v.name:
-                            cpp=cpp+v.type+" "+v.name
-                        else:
-                            cpp=cpp+v.type+" x"
-                        if i<len(p.args):
-                            cpp=cpp+', '
-                        i=i+1
-                        
-                cpp=cpp+")"
-                if p.post_modifier:
-                    cpp=cpp+" "+p.post_modifier
-                if p.return_type==None and p.name[0]!='~' and class_fields and p.hint!='move' and p.hint!='copy': # Custom constructor
-                    cpp=cpp+': \n'+ts
-                    init_list=[]
-                    if p.args:
-                        for constr_arg in p.args:
-                            for var in class_fields:
-                                if similar(constr_arg.name, var.name)>=0.8:
-                                    init_list.append(var.name+'('+str(constr_arg.name)+')')
-                    cpp=cpp+('\n'+ts).join(init_list)
-                cpp=cpp+"\n{\n"+ts
-                if p.body:
-                    cpp=cpp+p.body
-                elif p.return_type and p.return_type!='void' and p.hint!='move' and p.hint!='copy':
-                    cpp=cpp+p.return_type+' ret;\n'+ts+'\n'+ts+'return ret;'
-                elif p.return_type and p.hint=='copy':
-                    if p.args[0].name!='':
-                        cpp=cpp+'if (this != &'+p.args[0].name+')\n'+ts+'{\n'
-                    else:
-                        cpp=cpp+'if (this != &x)\n'+ts+'{\n'
-                    cpp=cpp+ts*2+'\n'
-                    cpp=cpp+ts+'}\n'
-                    cpp=cpp+ts+'return *this;'
-                cpp=cpp+"\n}\n\n"
-
+                cpp+=p.impl(ts)
             else:
-                if p.return_type:
-                    cpp_template=cpp_template+p.return_type+' '
-                cpp_template=cpp_template+templated_class+"::"+p.name+' ('
-                if p.args:
-                    i=1
-                    for v in p.args:
-                        if v.name:
-                            cpp_template=cpp_template+v.type+" "+v.name
-                        else:
-                            cpp_template=cpp_template+v.type+" x"
-                        if i<len(p.args):
-                            cpp_template=cpp_template+', '
-                        i=i+1
-                cpp_template+=")"
-                if p.post_modifier:
-                    cpp_template=cpp_template+" "+p.post_modifier
-                cpp_template+="\n{\n"+ts
-                if p.body:
-                    cpp_template+=p.body
-                elif p.return_type and p.return_type!='void':
-                    cpp_template+=p.return_type+' ret;\n'+ts+'\n'+ts+'return ret;'
-                cpp_template+='\n}\n'
+                cpp_template+=p.impl(ts)
         if template_types and  isinstance(template_types,list):
             cpp_template=cpp_template+cpp
             cpp=''
