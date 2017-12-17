@@ -55,18 +55,19 @@ class method:
     def decl(self):
         a=''
         i=1
-        for x in self.args:
-            a+=str(x)
-            if i<len(self.args):
-                a+=', '
-            i=i+1
+        if self.args:
+            for x in self.args:
+                a+=str(x)
+                if i<len(self.args):
+                    a+=', '
+                i=i+1
         ret=''
         if self.template_args:
             ret+='template <class '+', class '.join(self.template_args)+'>\n'
         if self.pre_modifier:
-            ret+=self.pre_modifier
+            ret+=self.pre_modifier+' '
         if self.return_type:
-            ret+=self.return_type
+            ret+=self.return_type+' '
         ret+=self.name+' ('+a+')'
         if self.post_modifier:
             ret+=self.post_modifier
@@ -84,20 +85,20 @@ class method:
         if self.args:
             for v in self.args:
                 if v.pre_modifier:
-                    ret+=(v.pre_modifier+' ')
+                    a+=(v.pre_modifier+' ')
                 if v.name:
-                    ret+=(v.type+" "+v.name)
+                    a+=(v.type+" "+v.name)
                 else:
-                    ret+=(v.type+" x")
+                    a+=(v.type+" x")
                 if i<len(self.args):
-                    ret+=', '
+                    a+=', '
                 i=i+1
         if self.template_args:
             ret+='template <class '+', class '.join(self.template_args)+'>\n'
         if self.pre_modifier=='static':
             ret+='static '
         if self.return_type:
-            ret+=self.return_type
+            ret+=self.return_type+' '
         if self.class_name!='':
             ret+=self.class_name+'::'
         ret+=self.name+' ('+a+')'
@@ -224,7 +225,7 @@ def func_body(line, args, class_fields):
         else:
             return v
 
-def create_comments(methods, ts=' '*4)
+def create_comments(methods, ts=' '*4):
     ret={}
     i=1
     for p in methods:
@@ -278,9 +279,9 @@ def create_comments(methods, ts=' '*4)
                 if p.hint=='copy':
                     hpp+=(ts*2+" * \\return Copy of object\n")
                 elif p.hint=='move':
-                       hpp+=(ts*2+" * \\return Rvalue-reference to the object\n")
+                    hpp+=(ts*2+" * \\return Rvalue-reference to the object\n")
                 elif p.return_type=='void':
-                    hpp+=(ts*2+" * \\return None \n"
+                    hpp+=(ts*2+" * \\return None \n")
                 else:
                     hpp+=(ts*2+" * \\return  \n")
             hpp+=(ts*2+' **/\n')
