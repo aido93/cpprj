@@ -191,58 +191,6 @@ def consts(line):
         func.pre_modifier='const'
     return l
 
-def to_camel(snake_str):
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-    components = snake_str.split('_')
-    return components[0] + "".join(x.title() for x in components[1:])
-
-first_cap_re = re.compile('(.)([A-Z][a-z]+)')
-all_cap_re = re.compile('([a-z0-9])([A-Z])')
-def to_snake(name):
-    s1 = first_cap_re.sub(r'\1_\2', name)
-    return all_cap_re.sub(r'\1_\2', s1).lower()
-
-def header(class_name, author, email):
-    return """/**
- * Description: Interface to the """+class_name+"""-class
- * TODO: 
- * Author: """+author+"<"+email+">"+"""
- * Date:   """+time.strftime('%d.%m.%Y')+"""
- * */
-#pragma once\n"""
-
-def includes(quinc, autodetected, binc):
-    ret=""
-    if isinstance(quinc,list):
-        for name in quinc:
-            ret=ret+'#include "'+name+'"\n'
-    if isinstance(autodetected, list):
-        for name in autodetected:
-            ret=ret+'#include <'+name+'>\n'
-    if isinstance(binc, list):
-        for name in binc:
-            ret=ret+'#include <'+name+'>\n'
-    ret=ret+"// Common used types - uint32_t, etc.\n"
-    ret=ret+"#include <stdint.h>\n"
-    return ret
-
-def namespace(namespaces_name, body, tabstop):
-    ts='\n'+' '*tabstop
-    namespace_name=''
-    if isinstance(namespaces_name, list):
-        namespace_name="::".join(namespaces_name)
-    if isinstance(namespaces_name, str):
-        namespace_name=namespaces_name
-    if namespace_name=='':
-        return body
-    return """/**
- * \\brief """+namespace_name+""" - 
- **/
-namespace """+namespace_name+"""
-{
-"""+ts+body.replace('\n',ts)+"\n}; //"+namespace_name.upper()+" namespace\n"
-
 def combine_class(private_vars=None, protected_vars=None, public_methods=None, protected_methods=None, private_methods=None):
     class_fields=[]
     if isinstance(private_vars, list):
@@ -260,36 +208,35 @@ def combine_class(private_vars=None, protected_vars=None, public_methods=None, p
     return {'fields': class_fields, 'methods': class_methods}
 
 def add_sg(var, setters, getters):
-       sgetters=[]
-    if var:
-           for v in var:
-               if not snake_case:
-                   setter=to_camel("set_"+v.name)
-                   getter=to_camel("get_"+v.name)
-            else:
-                   setter=to_snake("set_"+v.name)
-                   getter=to_snake("get_"+v.name)
-               if getters:
-                   sgetters.append(method( return_type=v.type,
-                                           name=getter,
-                                           args=None,
-                                           post_modifier="const",
-                                           body="return "+v.name+";",
-                                           hint='getter'))
-            if setters:
-                   t=v.type
-                   if t.find('const ')==-1: 
-                       pm=None
-                       if t.find('static ')!=-1:
-                           t=t.replace('static ','')
-                           pm='static'
-                args=[arg(type="const "+t+'&', name='_'+v.name), ]
-                   sgetters.append(method( return_type='void',
-                                               name=setter,
-                                               args=args,
-                                               post_modifier=None,
-                                               body=v.name+" = _"+v.name+";",
-                                               hint='setter'))
+    sgetters=[]
+    for v in var:
+        if not snake_case:
+            setter=to_camel("set_"+v.name)
+            getter=to_camel("get_"+v.name)
+        else:
+            setter=to_snake("set_"+v.name)
+            getter=to_snake("get_"+v.name)
+        if getters:
+            sgetters.append(method( return_type=v.type,
+                                    name=getter,
+                                    args=None,
+                                    post_modifier="const",
+                                    body="return "+v.name+";",
+                                    hint='getter'))
+        if setters:
+            t=v.type
+            if t.find('const ')==-1: 
+                 pm=None
+                 if t.find('static ')!=-1:
+                     t=t.replace('static ','')
+                     pm='static'
+            args=[arg(type="const "+t+'&', name='_'+v.name), ]
+            sgetters.append(method( return_type='void',
+                                    name=setter,
+                                    args=args,
+                                    post_modifier=None,
+                                    body=v.name+" = _"+v.name+";",
+                                    hint='setter'))
     return sgetters
 
 def create_class(class_name,template_types=None, class_parents=None,
@@ -342,36 +289,6 @@ def create_class(class_name,template_types=None, class_parents=None,
     ret=ret+"\n};\n\n"
     headers = [el for el, _ in groupby(sorted(autodetected))]
     return (headers, ret, cpp+cpp1+cpp2, cpp_template+cpp_template1+cpp_template2)
-
-def bundle( class_name, author, email,
-            namespaces_name=None,
-            template_types=None, class_parents=None,
-            dd=0, dc=0, dm=0, vd=0, custom=None,
-            private_vars=None,protected_vars=None, deps_includes=None,
-            private_setters=False, private_getters=False, protected_setters=False, protected_getters=False,
-            public_methods=None,protected_methods=None,private_methods=None,
-            quinch=None, binch=None, quincs=None, bincs=None,
-            tabstop=4, snake_case=True):
-    if snake_case:
-        class_name=to_snake(class_name)
-    else:
-        class_name=to_camel(class_name)
-    publics=basic_class_content(class_name, template_types, dd, dc,dm, vd, custom)
-    if isinstance(public_methods, list):
-        publics.extend(public_methods)
-    header_autodetected, hpp_gen, cpp_gen, cpp_template_gen=create_class(class_name,template_types, class_parents,
-                 private_vars,protected_vars, deps_includes,
-                 private_setters, private_getters, protected_setters, protected_getters,
-                 publics,protected_methods,private_methods,
-                 tabstop,snake_case)
-    src_autodetected=[]
-    hpp=header(class_name, author, email)+includes(quinch,header_autodetected,binch)+namespace(namespaces_name, hpp_gen+cpp_template_gen, tabstop)
-    cpp=''
-    if not template_types:
-        cpp=header(class_name, author, email)+includes(quincs,src_autodetected,   bincs)+namespace(namespaces_name, cpp_gen, tabstop)
-    #test=header(class_name, author, email)+gen_test(class_name)
-    #return (hpp.replace('\n', os.linesep), cpp.replace('\\n', '\n'))
-    return (hpp, cpp)
 
 # TODO: Change maintainer to somebody from developers
 # TODO: Add simple variable checking to method body
