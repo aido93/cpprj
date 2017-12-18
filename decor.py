@@ -23,31 +23,23 @@ def includes(quinc, autodetected, binc):
     ret=""
     if isinstance(quinc,list):
         for name in quinc:
-            ret=ret+'#include "'+name+'"\n'
+            ret+=('#include "'+name+'"\n')
     if isinstance(autodetected, list):
         for name in autodetected:
-            ret=ret+'#include <'+name+'>\n'
+            ret+=('#include <'+name+'>\n')
     if isinstance(binc, list):
         for name in binc:
-            ret=ret+'#include <'+name+'>\n'
-    ret=ret+"// Common used types - uint32_t, etc.\n"
-    ret=ret+"#include <stdint.h>\n"
+            ret+=('#include <'+name+'>\n')
+    ret+="// Common used types - uint32_t, etc.\n"
+    ret+="#include <stdint.h>\n"
     return ret
 
-def namespace(namespaces_name, body, tabstop):
-    ts='\n'+' '*tabstop
-    namespace_name=''
-    if isinstance(namespaces_name, list):
-        namespace_name="::".join(namespaces_name)
+def namespace(ns, body, ts=' '*4):
+    ns1=''
+    if isinstance(ns, list):
+        ns1="::".join(ns)
     if isinstance(namespaces_name, str):
-        namespace_name=namespaces_name
-    if namespace_name=='':
+        ns1=ns
+    if ns1=='':
         return body
-    return """/**
- * \\brief """+namespace_name+""" - 
- **/
-namespace """+namespace_name+"""
-{
-"""+ts+body.replace('\n',ts)+"\n}; //"+namespace_name.upper()+" namespace\n"
-
-
+    return '/**\n * \\brief '+ns1+' - \n **/\n namespace '+ns1+'{\n'+ts+body.replace('\n',ts)+"\n}; //"+namespace_name.upper()+" namespace\n"
