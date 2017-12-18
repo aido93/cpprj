@@ -31,10 +31,56 @@ pre_field_modifiers    = ['static', 'const', 'mutable']
 pre_var_modifiers      = ['static', 'const', 'extern']
 post_class_modifiers   = ['final', ]
 
-class parents:
-    type='public'
-    name=''
-    template_types=None
+class parent:
+    type           = 'public'
+    name           = ''
+    template_types = []
+
+class class_:
+    template_types    = []
+	parents           = []
+	name              = ''
+
+	public_methods    = []
+	protected_methods = []
+	private_methods   = []
+	
+	protected_fields  = []
+	private_fields    = []
+    
+	def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+	def decl(self, ts=' '*4):
+		ret=''
+    	if self.template_types:
+        	ret+='template <class '+', class '.join(self.template_types)+'>\n'
+    	ret+="class "+self.name
+		if self.parents:
+			ret+=' : '
+			for p in self.parents:
+				ret+=(p.type+' '+p.name)
+				if p.template_types:
+					ret+=('<'+', '.join(p.template_types)+'>')
+		ret+='\n{\n'+ts+'public:\n'+ts*2
+		if self.public_methods:
+			for p in self.public_methods:
+				ret+=p.decl()
+		if self.protected_methods or self.protected_fields:
+			ret+=('\n'+ts+'protected:\n'+ts*2)
+			if self.protected_methods:
+				for p in self.protected_methods:
+					ret+=(p.decl()+'\n'+ts*2)
+			if self.protected_fields:
+				for p in self.protected_fields:
+					ret+=(str(p)+'; //!< \n'+ts*2)
+		ret+=('\n'+ts+'private:\n'+ts*2)
+		if self.private_methods:
+			for p in self.private_methods:
+				ret+=(p.decl()+'\n'+ts*2)
+		if self.private_fields:
+			for p in self.private_fields:
+				ret+=(str(p)+'; //!< \n'+ts*2)
+		ret+='\n};\n'
 
 def fields(line):
     line=line.replace('\n','')
@@ -169,21 +215,6 @@ def create_class(class_name,template_types=None, class_parents=None,
  * \\brief
  * \\details
  **/\n"""
-    if template_types:
-        ret=ret+'template <class '+', class '.join(template_types)
-        ret=ret+">\n"
-    ret=ret+"class "+class_name;
-    if class_parents:
-        ret=ret+': '
-        i=1
-        for c in class_parents:
-            ret=ret+c.type+' '+c.name
-            if c.template_types and isinstance(c.template_types, list):
-                ret=ret+'<'+', '.join(c.template_types)+'>'
-            if i<len(class_parents):
-                ret=ret+', '
-            i=i+1
-    ret=ret+"\n{\n"+ts+'public:\n';
     sgetters=[]
     if protected_vars:
         for v in protected_vars:
