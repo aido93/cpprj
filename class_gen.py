@@ -54,102 +54,66 @@ class class_:
     # vd=0 - not virtual
     # vd=1 - virtual
     # vd=2 - pure virtual
+    # vd=3 - virtual protected
     # Constructors:
     # dd=0 - custom constructor (delete default)
     # dd=1 - deleted constructor
     # dd=2 - default constructor
-    def basic_class_content(class_name, template_types, dd=0, dc=0, dm=0, vd=0, custom=None):
+    def basic_class_content(self, dd=0, dc=0, dm=0, vd=0, custom=None):
         ret=[]
-        self.name=class_name
-        self.template_types=template_types
-        templated_class=class_name
-        if template_types and  isinstance(template_types,list):
-            templated_class=templated_class+'<'+', '.join(template_types)+'>'
-
+        templated_class=self.name
+        if self.template_types and  isinstance(self.template_types,list):
+            templated_class=templated_class+'<'+', '.join(self.template_types)+'>'
+		
+        default=method(name=self.name)
         if dd==0:
-            d1=method(name=class_name)
-            d1.post_modifier="noexcept"
-            ret.append(d1)
+            default.post_modifier="noexcept"
         elif dd==1:
-            d1=method(name=class_name)
-            d1.post_modifier="=delete"
-            ret.append(d1)
+            default.post_modifier="=delete"
         elif dd==2:
-            d1=method(name=class_name)
-            d1.post_modifier="=default"
-            ret.append(d1)
+            default.post_modifier="=default"
+        ret.append(default)
 
+        op=method(return_type=templated_class, name="operator=", hint='copy', args=[arg(pre_modifier='const', type=self.name+"&"),])
+        copyc=method(name=self.name, hint='copy', args=[arg(pre_modifier="const", type=self.name+"&"),])
         if dc==0:
-            op=method(return_type=templated_class, name="operator=", args=[arg(type="const "+class_name+"&"),])
-            op.hint='copy'
-            ret.append(op)
-            d1=method(name=class_name)
-            d1.hint='copy'
-            d1.args=[arg(type="const "+class_name+"&"),]
-            ret.append(d1)
+            copyc.post_modifier="noexcept"
+            op.post_modifier="noexcept"
         elif dc==1:
-            d1=method(name=class_name)
-            d1.hint='copy'
-            d1.args=[arg(type="const "+class_name+"&"),]
-            d1.post_modifier="=delete"
-            ret.append(d1)
+            copyc.post_modifier="=delete"
+            op.post_modifier="=delete"
         elif dc==2:
-            op=method(return_type=templated_class, name="operator=", args=[arg(type="const "+class_name+"&"),])
-            op.hint='copy'
-            op.post_modifier='=default'
-            ret.append(op)
-            d1=method(name=class_name)
-            d1.hint='copy'
-            d1.args=[arg(type="const "+class_name+"&"),]
-            d1.post_modifier="=default"
-               ret.append(d1)
+            copyc.post_modifier="=default"
+            op.post_modifier="=default"
+        ret.append(op)
+        ret.append(copyc)
 
+        mop=method(return_type=templated_class, name="operator=", hint='move', args=[arg(pre_modifier='const', type=self.name+"&&"),])
+        movec=method(name=self.name, hint='move', args=[arg(pre_modifier="const", type=self.name+"&&"),])
         if dm==0:
-            op=method(return_type=templated_class+'&', name="operator=", args=[arg(type="const "+class_name+"&&"),])
-            op.hint='move'
-            ret.append(op)
-            d1=method(name=class_name)
-            d1.hint='move'
-            d1.args=[arg(type="const "+class_name+"&&"),]
-            ret.append(d1)
+            movec.post_modifier="noexcept"
+            mop.post_modifier="noexcept"
         elif dm==1:
-            d1=method(name=class_name)
-            d1.hint='move'
-            d1.args=[arg(type="const "+class_name+"&&"),]
-            d1.post_modifier="=delete"
-            ret.append(d1)
+            movec.post_modifier="=delete"
+            mop.post_modifier="=delete"
         elif dm==2:
-            op=method(return_type=class_name+'&', name="operator=", args=[arg(type="const "+class_name+"&&"),])
-            op.hint='move'
-            op.post_modifier='=default'
-            ret.append(op)
-            d1=method(name=class_name)
-            d1.hint='move'
-            d1.args=[arg(type="const "+class_name+"&&"),]
-            d1.post_modifier="=default"
-            ret.append(d1)
+            movec.post_modifier="=default"
+            mop.post_modifier="=default"
+        ret.append(mop)
+        ret.append(movec)
     
         if custom:
             for constructor_params in custom:
-                d1=method(name=class_name)
-                d1.args=constructor_params
-                ret.append(d1)
-        if vd==0:
-            d1=method(name=class_name)
-            d1.name="~"+class_name
-            ret.append(d1)
+                ret.append(method(name=self.name, args=constructor_params))
+        if   vd==0:
+            ret.append(method(name='~'+self.name))
         elif vd==1:
-            d1=method(name=class_name)
-            d1.name="~"+class_name
-            d1.pre_modifier="virtual"
-            ret.append(d1)
+            ret.append(method(pre_modifier='virtual', name='~'+self.name))
         elif vd==2:
-            d1=method(name=class_name)
-            d1.name="~"+class_name
-            d1.pre_modifier="virtual"
-            d1.post_modifier="=0"
-            ret.append(d1)
-        self.public_methods=ret
+            ret.append(method(pre_modifier='virtual', name='~'+self.name, post_modifier='=0'))
+        elif vd==3:
+            self.protected_methods.append(method(name='~'+self.name, pre_modifier='virtual'))
+        self.public_methods.extend(ret)
 
 
     def decl(self, ts=' '*4):
