@@ -4,28 +4,7 @@ import re
 import json
 from itertools import groupby
 from functions import arg, method, add_methods
-
-stl={
-    'containers'            : [ "vector","list","map","queue","deque","string","array","set","stack","forward_list","unordered_set","unordered_map"],
-    'memory'                : [ "auto_ptr","shared_ptr","weak_ptr","unique_ptr","auto_ptr_ref","default_delete",
-                                "allocator","allocator_arg","allocator_arg_t","allocator_traits",
-                                "enable_shared_from_this","owner_less","raw_storage_iterator","pointer_traits","pointer_safety"],
-    'chrono'                : [ "duration","time_point","system_clock","steady_clock","high_resolution_clock","treat_as_floating_point",
-                                "duration_values","hours","minutes","seconds","milliseconds"],
-    'functional'            : [ "function",],
-    'initializer_list'      : [ "initializer_list",],
-    'random'                : [ "random_device",],
-    'string'                : [ "string","wstring","basic_string","u16string","u32string"],
-    'valarray'              : [ "valarray","slice","gslice","slice_array","gslice_array","mask_array","indirect_array"],
-    'utility'               : [ "pair",],
-    'mutex'                 : [ "mutex","recursive_mutex","timed_mutex","recursive_timed_mutex","unique_lock","lock_guard","once_flag"],
-    'thread'                : [ "thread",],
-    'future'                : [ "future","promise","packaged_task","shared_future","future_status","future_error","future_errc"],
-    'condition_variable'    : [ "condition_variable","condition_variable_any","cv_status"],
-    'atomic'                : [ "atomic","atomic_flag"],
-    'tuple'                 : [ "tuple","tuple_size","tuple_element"],
-    'complex'               : [ "complex",]
-}
+from header_detection import subtype_autodetection
 
 pre_field_modifiers    = ['static', 'const', 'mutable']
 pre_var_modifiers      = ['static', 'const', 'extern']
@@ -37,50 +16,187 @@ class parent:
     template_types = []
 
 class class_:
-    template_types    = []
-	parents           = []
-	name              = ''
+    template_types     = []
+    parents            = []
+    del_comments       = False
+    name               = ''
+    post_modifier      = ''
 
-	public_methods    = []
-	protected_methods = []
-	private_methods   = []
-	
-	protected_fields  = []
-	private_fields    = []
+    public_methods     = []
+    public_comments    = []
+
+    protected_methods  = []
+    protected_comments = []
     
-	def __init__(self, **kwargs):
+    private_methods    = []
+    private_comments   = []
+    
+    protected_fields   = []
+    private_fields     = []
+    set                = []
+    get                = []
+    
+    def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
-	def decl(self, ts=' '*4):
-		ret=''
-    	if self.template_types:
-        	ret+='template <class '+', class '.join(self.template_types)+'>\n'
-    	ret+="class "+self.name
-		if self.parents:
-			ret+=' : '
-			for p in self.parents:
-				ret+=(p.type+' '+p.name)
-				if p.template_types:
-					ret+=('<'+', '.join(p.template_types)+'>')
-		ret+='\n{\n'+ts+'public:\n'+ts*2
-		if self.public_methods:
-			for p in self.public_methods:
-				ret+=p.decl()
-		if self.protected_methods or self.protected_fields:
-			ret+=('\n'+ts+'protected:\n'+ts*2)
-			if self.protected_methods:
-				for p in self.protected_methods:
-					ret+=(p.decl()+'\n'+ts*2)
-			if self.protected_fields:
-				for p in self.protected_fields:
-					ret+=(str(p)+'; //!< \n'+ts*2)
-		ret+=('\n'+ts+'private:\n'+ts*2)
-		if self.private_methods:
-			for p in self.private_methods:
-				ret+=(p.decl()+'\n'+ts*2)
-		if self.private_fields:
-			for p in self.private_fields:
-				ret+=(str(p)+'; //!< \n'+ts*2)
-		ret+='\n};\n'
+        if not self.del_comments:
+            self.comment_methods()
+
+    def comment_methods(self):
+        self.public_comments    = create_comments(self.public_methods)
+        self.protected_comments = create_comments(self.protected_methods)
+        self.private_comments   = create_comments(self.private_methods)
+        
+    def uncomment_methods(self):
+        self.public_comments    = []
+        self.protected_comments = []
+        self.private_comments   = []
+
+    # vd=0 - not virtual
+    # vd=1 - virtual
+    # vd=2 - pure virtual
+    # Constructors:
+    # dd=0 - custom constructor (delete default)
+    # dd=1 - deleted constructor
+    # dd=2 - default constructor
+    def basic_class_content(class_name, template_types, dd=0, dc=0, dm=0, vd=0, custom=None):
+        ret=[]
+        self.name=class_name
+        self.template_types=template_types
+        templated_class=class_name
+        if template_types and  isinstance(template_types,list):
+            templated_class=templated_class+'<'+', '.join(template_types)+'>'
+
+        if dd==0:
+            d1=method(name=class_name)
+            d1.post_modifier="noexcept"
+            ret.append(d1)
+        elif dd==1:
+            d1=method(name=class_name)
+            d1.post_modifier="=delete"
+            ret.append(d1)
+        elif dd==2:
+            d1=method(name=class_name)
+            d1.post_modifier="=default"
+            ret.append(d1)
+
+        if dc==0:
+            op=method(return_type=templated_class, name="operator=", args=[arg(type="const "+class_name+"&"),])
+            op.hint='copy'
+            ret.append(op)
+            d1=method(name=class_name)
+            d1.hint='copy'
+            d1.args=[arg(type="const "+class_name+"&"),]
+            ret.append(d1)
+        elif dc==1:
+            d1=method(name=class_name)
+            d1.hint='copy'
+            d1.args=[arg(type="const "+class_name+"&"),]
+            d1.post_modifier="=delete"
+            ret.append(d1)
+        elif dc==2:
+            op=method(return_type=templated_class, name="operator=", args=[arg(type="const "+class_name+"&"),])
+            op.hint='copy'
+            op.post_modifier='=default'
+            ret.append(op)
+            d1=method(name=class_name)
+            d1.hint='copy'
+            d1.args=[arg(type="const "+class_name+"&"),]
+            d1.post_modifier="=default"
+               ret.append(d1)
+
+        if dm==0:
+            op=method(return_type=templated_class+'&', name="operator=", args=[arg(type="const "+class_name+"&&"),])
+            op.hint='move'
+            ret.append(op)
+            d1=method(name=class_name)
+            d1.hint='move'
+            d1.args=[arg(type="const "+class_name+"&&"),]
+            ret.append(d1)
+        elif dm==1:
+            d1=method(name=class_name)
+            d1.hint='move'
+            d1.args=[arg(type="const "+class_name+"&&"),]
+            d1.post_modifier="=delete"
+            ret.append(d1)
+        elif dm==2:
+            op=method(return_type=class_name+'&', name="operator=", args=[arg(type="const "+class_name+"&&"),])
+            op.hint='move'
+            op.post_modifier='=default'
+            ret.append(op)
+            d1=method(name=class_name)
+            d1.hint='move'
+            d1.args=[arg(type="const "+class_name+"&&"),]
+            d1.post_modifier="=default"
+            ret.append(d1)
+    
+        if custom:
+            for constructor_params in custom:
+                d1=method(name=class_name)
+                d1.args=constructor_params
+                ret.append(d1)
+        if vd==0:
+            d1=method(name=class_name)
+            d1.name="~"+class_name
+            ret.append(d1)
+        elif vd==1:
+            d1=method(name=class_name)
+            d1.name="~"+class_name
+            d1.pre_modifier="virtual"
+            ret.append(d1)
+        elif vd==2:
+            d1=method(name=class_name)
+            d1.name="~"+class_name
+            d1.pre_modifier="virtual"
+            d1.post_modifier="=0"
+            ret.append(d1)
+        self.public_methods=ret
+
+
+    def decl(self, ts=' '*4):
+        ret=''
+        if self.template_types:
+            ret+='template <class '+', class '.join(self.template_types)+'>\n'
+        ret+="class "+self.name
+        if self.parents:
+            ret+=' : '
+            for p in self.parents:
+                ret+=(p.type+' '+p.name)
+                if p.template_types:
+                    ret+=('<'+', '.join(p.template_types)+'>')
+        if self.post_modifier:
+            ret+=self.post_modifier
+        ret+='\n{\n'+ts+'public:\n'+ts*2
+        if self.public_methods:
+            i=1
+            for p in self.public_methods:
+                if self.public_comments and i in self.public_comments:
+                    ret+=self.public_comments[i]
+                ret+=p.decl()
+                i=i+1
+        if self.protected_methods or self.protected_fields:
+            ret+=('\n'+ts+'protected:\n'+ts*2)
+            if self.protected_methods:
+                i=1
+                for p in self.protected_methods:
+                    if self.protected_comments and i in self.protected_comments:
+                        ret+=self.protected_comments[i]
+                    ret+=(p.decl()+'\n'+ts*2)
+                    i=i+1
+            if self.protected_fields:
+                for p in self.protected_fields:
+                    ret+=(str(p)+'; //!< \n'+ts*2)
+        ret+=('\n'+ts+'private:\n'+ts*2)
+        if self.private_methods:
+            i=1
+            for p in self.private_methods:
+                if self.private_comments and i in self.private_comments:
+                    ret+=self.private_comments[i]
+                i=i+1
+                ret+=(p.decl()+'\n'+ts*2)
+        if self.private_fields:
+            for p in self.private_fields:
+                ret+=(str(p)+'; //!< \n'+ts*2)
+        ret+='\n};\n'
 
 def fields(line):
     line=line.replace('\n','')
@@ -163,131 +279,83 @@ namespace """+namespace_name+"""
 {
 """+ts+body.replace('\n',ts)+"\n}; //"+namespace_name.upper()+" namespace\n"
 
-def subtypes_autodetection(typ, deps_includes):
-    autodetected=[]
-    # Cleaning
-    t1=typ
-    if not t1:
-        return autodetected
-    for pre in pre_field_modifiers:
-        t1=re.sub(str(pre)+'\s+', '', t1)
-    for inc, t in stl.items():
-        if any("std::"+substring in t1 for substring in t):
-            if inc=='containers':
-                for substring in t:
-                    if "std::"+substring in t1:
-                        autodetected.append(substring)
-            elif inc not in autodetected:
-                autodetected.append(inc)
-    if t1[0]=='Q' and len(t1)!=1:
-        del_templ=re.sub('<.*>', '', t1)
-        autodetected.append(del_templ)
-    elif isinstance(deps_includes, list):
-        for dep in deps_includes:
-            for file in os.walkdir(dep):
-                if "class "+t1 in open(file).read():
-                    autodetected.append(file)
-    return autodetected
+def combine_class(private_vars=None, protected_vars=None, public_methods=None, protected_methods=None, private_methods=None):
+    class_fields=[]
+    if isinstance(private_vars, list):
+        class_fields.extend(private_vars)
+    if isinstance(protected_vars, list):
+        class_fields.extend(protected_vars)
+    
+    class_methods=[]
+    if isinstance(private_methods, list):
+        class_methods.extend(private_methods)
+    if isinstance(protected_methods, list):
+        class_methods.extend(protected_methods)
+    if isinstance(public_methods, list):
+        class_methods.extend(public_methods)
+    return {'fields': class_fields, 'methods': class_methods}
+
+def add_sg(var, setters, getters):
+       sgetters=[]
+    if var:
+           for v in var:
+               if not snake_case:
+                   setter=to_camel("set_"+v.name)
+                   getter=to_camel("get_"+v.name)
+            else:
+                   setter=to_snake("set_"+v.name)
+                   getter=to_snake("get_"+v.name)
+               if getters:
+                   sgetters.append(method( return_type=v.type,
+                                           name=getter,
+                                           args=None,
+                                           post_modifier="const",
+                                           body="return "+v.name+";",
+                                           hint='getter'))
+            if setters:
+                   t=v.type
+                   if t.find('const ')==-1: 
+                       pm=None
+                       if t.find('static ')!=-1:
+                           t=t.replace('static ','')
+                           pm='static'
+                args=[arg(type="const "+t+'&', name='_'+v.name), ]
+                   sgetters.append(method( return_type='void',
+                                               name=setter,
+                                               args=args,
+                                               post_modifier=None,
+                                               body=v.name+" = _"+v.name+";",
+                                               hint='setter'))
+    return sgetters
 
 def create_class(class_name,template_types=None, class_parents=None,
                  private_vars=None,protected_vars=None, deps_includes=None,
                  private_setters=False, private_getters=False, protected_setters=False, protected_getters=False,
                  public_methods=None,protected_methods=None,private_methods=None,
                  tabstop=4,snake_case=True):
+    cc=combine_class(private_vars, protected_vars, public_methods, protected_methods, private_methods)
     autodetected=[]
-    if isinstance(private_vars, list):
-        for v in private_vars:
-            autodetected.extend(subtypes_autodetection(v.type, deps_includes))
-    if isinstance(protected_vars, list):
-        for v in protected_vars:
-            autodetected.extend(subtypes_autodetection(v.type, deps_includes))
-    if private_methods and  isinstance(private_methods, list):
-        for v in private_methods:
-            autodetected.extend(subtypes_autodetection(v.return_type, deps_includes))
-    if protected_methods and  isinstance(protected_methods, list):
-        for v in protected_methods:
-            autodetected.extend(subtypes_autodetection(v.return_type, deps_includes))
-    if public_methods and  isinstance(public_methods, list):
-        for v in public_methods:
-            autodetected.extend(subtypes_autodetection(v.return_type, deps_includes))
-    ts=' '*tabstop
-    ret="""/**
- * \\brief
- * \\details
- **/\n"""
-    sgetters=[]
-    if protected_vars:
-        for v in protected_vars:
-            if not snake_case:
-                setter=to_camel("set_"+v.name)
-                getter=to_camel("get_"+v.name)
-            else:
-                setter=to_snake("set_"+v.name)
-                getter=to_snake("get_"+v.name)
-            if protected_getters:
-                sgetters.append(method( return_type=v.type,
-                                        name=getter,
-                                        args=None,
-                                        post_modifier="const",
-                                        body="return "+v.name+";",
-                                        hint='getter'))
-            if protected_setters:
-                t=v.type
-                if t.find('const ')==-1: 
-                    pm=None
-                    if t.find('static ')!=-1:
-                        t=t.replace('static ','')
-                        pm='static'
-                    args=[arg(type="const "+t+'&', name='_'+v.name), ]
-                    sgetters.append(method( return_type='void',
-                                            name=setter,
-                                            args=args,
-                                            post_modifier=None,
-                                            body=v.name+" = _"+v.name+";",
-                                            hint='setter'))
-    if private_vars:
-        for v in private_vars:
-            if not snake_case:
-                setter=to_camel("set_"+v.name)
-                getter=to_camel("get_"+v.name)
-            else:
-                setter=to_snake("set_"+v.name)
-                getter=to_snake("get_"+v.name)
-            if private_getters:
-                sgetters.append(method( return_type=v.type,
-                                        name=getter,
-                                        args=None,
-                                        post_modifier="const",
-                                        body="return "+v.name+";",
-                                        hint='getter'))
-            if private_setters:
-                t=v.type
-                if t.find('const ')==-1: 
-                    pm=None
-                    if t.find('static ')!=-1:
-                        t=t.replace('static ','')
-                        pm='static'
-                    args=[arg(type="const "+t+'&', name='_'+v.name),]
-                    sgetters.append(method( return_type='void',
-                                            name=setter,
-                                            args=args,
-                                            post_modifier=None,
-                                            pre_modifier=pm,
-                                            body=v.name+" = _"+v.name+";",
-                                            hint='setter'))
-    class_fields=[]
-    if isinstance(private_vars, list):
-        class_fields.extend(private_vars)
-    if isinstance(protected_vars, list):
-        class_fields.extend(protected_vars)
+    if cc['fields']:
+        for v in cc['fields']:
+            autodetected.extend(subtypes_autodetection(, deps_includes))
+    if cc['methods']:
+        for v in cc['methods']:
+            autodetected.extend(subtypes_autodetection(v, deps_includes))
+     sgetters=add_sg(private_vars, private_setters, private_getters)
+     sgetters.extend(add_sg(protected_vars, protected_setters, protected_getters))
     pub=[]
     if isinstance(public_methods, list):
         pub.extend(public_methods)
     if isinstance(sgetters, list):
         pub.extend(sgetters)
-    hpp, cpp, cpp_template=add_methods(class_name, template_types, pub, ts, class_fields)
+    hpp, cpp, cpp_template=add_methods(class_name, template_types, pub, class_fields, ts )
     hpp1, cpp1, cpp_template1='', '', ''
     hpp2, cpp2, cpp_template2='', '', ''
+    ts=' '*tabstop
+    ret="""/**
+ * \\brief
+ * \\details
+ **/\n"""
     ret=ret+hpp
     ret=ret+'\n'+ts*2
     if protected_vars or protected_methods:
@@ -296,7 +364,7 @@ def create_class(class_name,template_types=None, class_parents=None,
         for v in protected_vars:
             ret=ret+ts*2+v.type+' '+v.name+'; //!< \n'
     if protected_methods:
-        hpp1, cpp1, cpp_template1=add_methods(class_name, template_types, protected_methods, ts, class_fields)
+        hpp1, cpp1, cpp_template1=add_methods(class_name, template_types, protected_methods, class_fields, ts)
         ret=ret+hpp1
         ret=ret+'\n'+ts*2
     ret=ret+'\n'+ts+'private:\n'
@@ -304,110 +372,12 @@ def create_class(class_name,template_types=None, class_parents=None,
         for v in private_vars:
             ret=ret+ts*2+v.type+' '+v.name+'; //!< \n'
     if private_methods:
-        hpp2, cpp2, cpp_template2=add_methods(class_name, template_types, private_methods, ts, class_fields)
+        hpp2, cpp2, cpp_template2=add_methods(class_name, template_types, private_methods, class_fields, ts)
         ret=ret+hpp2
         ret=ret+'\n'+ts*2
     ret=ret+"\n};\n\n"
     headers = [el for el, _ in groupby(sorted(autodetected))]
     return (headers, ret, cpp+cpp1+cpp2, cpp_template+cpp_template1+cpp_template2)
-
-# vd=0 - not virtual
-# vd=1 - virtual
-# vd=2 - pure virtual
-# Constructors:
-# dd=0 - custom constructor (delete default)
-# dd=1 - deleted constructor
-# dd=2 - default constructor
-def basic_class_content(class_name, template_types, dd=0, dc=0, dm=0, vd=0, custom=None):
-    ret=[]
-    templated_class=class_name
-    if template_types and  isinstance(template_types,list):
-        templated_class=templated_class+'<'+', '.join(template_types)+'>'
-
-    if dd==0:
-        d1=method(name=class_name)
-        d1.post_modifier="noexcept"
-        ret.append(d1)
-    elif dd==1:
-        d1=method(name=class_name)
-        d1.post_modifier="=delete"
-        ret.append(d1)
-    elif dd==2:
-        d1=method(name=class_name)
-        d1.post_modifier="=default"
-        ret.append(d1)
-
-    if dc==0:
-        op=method(return_type=templated_class, name="operator=", args=[arg(type="const "+class_name+"&"),])
-        op.hint='copy'
-        ret.append(op)
-        d1=method(name=class_name)
-        d1.hint='copy'
-        d1.args=[arg(type="const "+class_name+"&"),]
-        ret.append(d1)
-    elif dc==1:
-        d1=method(name=class_name)
-        d1.hint='copy'
-        d1.args=[arg(type="const "+class_name+"&"),]
-        d1.post_modifier="=delete"
-        ret.append(d1)
-    elif dc==2:
-        op=method(return_type=templated_class, name="operator=", args=[arg(type="const "+class_name+"&"),])
-        op.hint='copy'
-        op.post_modifier='=default'
-        ret.append(op)
-        d1=method(name=class_name)
-        d1.hint='copy'
-        d1.args=[arg(type="const "+class_name+"&"),]
-        d1.post_modifier="=default"
-        ret.append(d1)
-
-    if dm==0:
-        op=method(return_type=templated_class+'&', name="operator=", args=[arg(type="const "+class_name+"&&"),])
-        op.hint='move'
-        ret.append(op)
-        d1=method(name=class_name)
-        d1.hint='move'
-        d1.args=[arg(type="const "+class_name+"&&"),]
-        ret.append(d1)
-    elif dm==1:
-        d1=method(name=class_name)
-        d1.hint='move'
-        d1.args=[arg(type="const "+class_name+"&&"),]
-        d1.post_modifier="=delete"
-        ret.append(d1)
-    elif dm==2:
-        op=method(return_type=class_name+'&', name="operator=", args=[arg(type="const "+class_name+"&&"),])
-        op.hint='move'
-        op.post_modifier='=default'
-        ret.append(op)
-        d1=method(name=class_name)
-        d1.hint='move'
-        d1.args=[arg(type="const "+class_name+"&&"),]
-        d1.post_modifier="=default"
-        ret.append(d1)
-    
-    if custom:
-        for constructor_params in custom:
-            d1=method(name=class_name)
-            d1.args=constructor_params
-            ret.append(d1)
-    if vd==0:
-        d1=method(name=class_name)
-        d1.name="~"+class_name
-        ret.append(d1)
-    elif vd==1:
-        d1=method(name=class_name)
-        d1.name="~"+class_name
-        d1.pre_modifier="virtual"
-        ret.append(d1)
-    elif vd==2:
-        d1=method(name=class_name)
-        d1.name="~"+class_name
-        d1.pre_modifier="virtual"
-        d1.post_modifier="=0"
-        ret.append(d1)
-    return ret
 
 def bundle( class_name, author, email,
             namespaces_name=None,
