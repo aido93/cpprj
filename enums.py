@@ -26,12 +26,13 @@ def get_all_enums(text):
 def enum(name, elements, upper=False, is_class=True, ts=' '*4):
     elements=re.sub('\s+',' ', elements)
     elements=elements.split(' ')
+    elements = [e for e in elements if e]
     if upper:
         a=(s.upper() for s in elements)
     else:
         a=elements
     els=(',\n'+ts).join(a)
-    if is_class:
+    if is_class and name!='':
         return 'enum class '+name+'\n{\n'+ts+els+'\n};\n'
     else:
         return 'enum '+name+'\n{\n'+ts+els+'\n};\n'

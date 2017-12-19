@@ -16,6 +16,8 @@ class arg:
     name=''
     value=None
     def __str__(self):
+        if self.type=='void':
+            return 'void'
         a=''
         if self.pre_modifier:
             a+=self.pre_modifier+' '
@@ -51,6 +53,8 @@ class method:
                     raise Exception("constructor cannot be "+str(self.post_modifier))
             else:
                 raise Exception("Undefined post-modifier: "+str(self.post_modifier))
+        if 'return_type' in kwargs:
+            self.return_type=kwargs['return_type'].rstrip()
     
     def decl(self):
         a=''
@@ -88,6 +92,8 @@ class method:
                     a+=(v.pre_modifier+' ')
                 if v.name:
                     a+=(v.type+" "+v.name)
+                elif v.type=='void':
+                    a+=v.type
                 else:
                     a+=(v.type+" x")
                 if i<len(self.args):
@@ -183,16 +189,23 @@ def funcs(line):
                     else:
                         type_name=a1
                         value=None
+                    if '**' not in type_name:
+                        type_name=type_name.replace('*', '* ')
+                    else:
+                        type_name=type_name.replace('**', '** ')
+                    if '&&' not in type_name:
+                        type_name=type_name.replace('&', '& ')
+                    else:
+                        type_name=type_name.replace('&&', '&& ')
                     *type_f, var_name=type_name.split(' ')
-                    pre_mod=None
-                    print(type_f)
-                    print(var_name)
                     if not type_f:
-                        new_args.append(arg(pre_modifier=pre_mod, type=var_name, value=value))
+                        new_args.append(arg(type=var_name, value=value))
                     elif type_f[0]=='const':
-                        pre_mod='const'
                         type_f=type_f[1:]
-                    new_args.append(arg(pre_modifier=pre_mod, type=' '.join(type_f), name=var_name, value=value))
+                        new_args.append(arg(pre_modifier='const', type=' '.join(type_f), name=var_name, value=value))
+                    else:
+                        new_args.append(arg(type=' '.join(type_f), name=var_name, value=value))
+                        
                     temp=''
         else:
             new_args=None

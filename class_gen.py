@@ -188,8 +188,11 @@ class class_:
                     ret+=(p.decl().replace('\n','\n'+ts*2)+'\n'+ts*2)
                     i=i+1
             if self.protected_fields:
-                for p in self.protected_fields:
-                    ret+=(str(p)+'; //!< \n'+ts*2)
+            	max_len=0
+            	for p in self.protected_fields:
+                	max_len=max(max_len, len(str(p)))
+            	for p in self.protected_fields:
+                	ret+=(str(p)+';'+' '*(max_len-len(str(p))+1)+'//!< \n'+ts*2)
         ret+=('\n'+ts+'private:\n'+ts*2)
         if self.private_methods:
             i=1
@@ -199,8 +202,11 @@ class class_:
                 i=i+1
                 ret+=(p.decl().replace('\n','\n'+ts*2)+'\n'+ts*2)
         if self.private_fields:
+            max_len=0
             for p in self.private_fields:
-                ret+=(str(p)+'; //!< \n'+ts*2)
+                max_len=max(max_len, len(str(p)))
+            for p in self.private_fields:
+                ret+=(str(p)+';'+' '*(max_len-len(str(p))+1)+'//!< \n'+ts*2)
         ret+='\n};\n'
         return ret
 
