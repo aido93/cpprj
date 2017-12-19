@@ -3,6 +3,7 @@ import os
 import re
 import json
 from itertools import groupby
+from decor import to_snake, to_camel
 from functions import arg, method, add_methods, create_comments
 from header_detection import subtypes_autodetection
 
@@ -36,6 +37,39 @@ def fields(line):
     del ret[-1]
     return ret
 
+def add_sg(var, setters, getters, snake_case):
+    sgetters=[]
+    for v in var:
+        if not snake_case:
+            setter=to_camel("set_"+v.name)
+            getter=to_camel("get_"+v.name)
+        else:
+            setter=to_snake("set_"+v.name)
+            getter=to_snake("get_"+v.name)
+        if getters:
+            sgetters.append(method( return_type=v.type,
+                                    name=getter,
+                                    args=None,
+                                    post_modifier="const",
+                                    body="return "+v.name+";",
+                                    hint='getter'))
+        if setters:
+            t=v.type
+            if t.find('const ')==-1: 
+                 pm=None
+                 if t.find('static ')!=-1:
+                     t=t.replace('static ','')
+                     pm='static'
+            args=[arg(type="const "+t+'&', name='_'+v.name), ]
+            sgetters.append(method( return_type='void',
+                                    name=setter,
+                                    args=args,
+                                    post_modifier=None,
+                                    body=v.name+" = _"+v.name+";",
+                                    hint='setter'))
+    return sgetters
+
+
 class class_:
     template_types     = []
     parents            = []
@@ -56,6 +90,7 @@ class class_:
     private_fields     = []
     set                = []
     get                = []
+    snake_case         = True
     
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
@@ -75,6 +110,18 @@ class class_:
         if 'protected_fields' in kwargs:
             if isinstance(kwargs['protected_fields'], str):
                 self.protected_fields=fields(kwargs['protected_fields'])
+        ss=False
+        gg=False
+        if 'private' in self.set:
+            ss=True
+        if 'private' in self.get:
+            gg=True
+        self.public_methods.extend(add_sg(self.private_fields, ss, gg, self.snake_case))
+        if 'protected' in self.set:
+            ss=True
+        if 'protected' in self.get:
+            gg=True
+        self.public_methods.extend(add_sg(self.protected_fields, ss, gg, self.snake_case))
         if not self.del_comments:
             self.comment_methods()
 
@@ -240,38 +287,6 @@ def combine_class(private_vars=None, protected_vars=None, public_methods=None, p
     if isinstance(public_methods, list):
         class_methods.extend(public_methods)
     return {'fields': class_fields, 'methods': class_methods}
-
-def add_sg(var, setters, getters):
-    sgetters=[]
-    for v in var:
-        if not snake_case:
-            setter=to_camel("set_"+v.name)
-            getter=to_camel("get_"+v.name)
-        else:
-            setter=to_snake("set_"+v.name)
-            getter=to_snake("get_"+v.name)
-        if getters:
-            sgetters.append(method( return_type=v.type,
-                                    name=getter,
-                                    args=None,
-                                    post_modifier="const",
-                                    body="return "+v.name+";",
-                                    hint='getter'))
-        if setters:
-            t=v.type
-            if t.find('const ')==-1: 
-                 pm=None
-                 if t.find('static ')!=-1:
-                     t=t.replace('static ','')
-                     pm='static'
-            args=[arg(type="const "+t+'&', name='_'+v.name), ]
-            sgetters.append(method( return_type='void',
-                                    name=setter,
-                                    args=args,
-                                    post_modifier=None,
-                                    body=v.name+" = _"+v.name+";",
-                                    hint='setter'))
-    return sgetters
 
 def create_class(class_name,template_types=None, class_parents=None,
                  private_vars=None,protected_vars=None, deps_includes=None,

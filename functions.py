@@ -291,14 +291,15 @@ def create_comments(methods):
                 hpp+=('\n * \\details \n')
                 
                 if p.template_args:
-                       for v in p.template_args:
-                           hpp+=" * \\param [in] "+v+" is the type corresponding to \n"
+                    for v in p.template_args:
+                        hpp+=" * \\param [in] "+v+" is the type corresponding to \n"
                 if p.args and p.hint!='copy' and p.hint!='move':
-                       for v in p.args:
-                           hpp+=" * \\param [in] "+v.name+" - "+"."
-                           if v.value:
-                               hpp+=" Default value is "+v.value
-                           hpp+="\n"
+                    for v in p.args:
+                        if v.type!='void':
+                            hpp+=" * \\param [in] "+v.name+" - "+"."
+                            if v.value:
+                                hpp+=" Default value is "+v.value
+                            hpp+="\n"
 
                 if p.hint=='copy':
                     hpp+=(" * \\return Copy of object\n")
@@ -322,12 +323,10 @@ def add_methods(class_name, template_types, methods, class_fields, ts=' '*4, del
         c=create_comments(methods)
     i=1
     for m in methods:
-        hpp+=ts*2
         if c and i in c:
-            hpp+=c[i].replace('\n', '\n'+ts)
-        hpp+='\n'
+            hpp+=c[i]
         hpp+=m.decl()
-        hpp+='\n'
+        hpp+='\n\n'
         i=i+1
     templated_class=class_name
     if template_types and  isinstance(template_types,list):
