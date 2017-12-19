@@ -56,7 +56,7 @@ def add_sg(var, setters, getters, snake_case):
                                     hint='getter'))
         if setters:
             t=v.type
-            if t.find('const ')==-1: 
+            if v.pre_modifier!='const': 
                  pm=None
                  if t.find('static ')!=-1:
                      t=t.replace('static ','')
@@ -65,6 +65,7 @@ def add_sg(var, setters, getters, snake_case):
             sgetters.append(method( return_type='void',
                                     name=setter,
                                     args=args,
+                                    pre_modifier=pm,
                                     post_modifier=None,
                                     body=v.name+" = _"+v.name+";",
                                     hint='setter'))
@@ -123,6 +124,15 @@ class class_:
         if 'protected' in self.get:
             gg=True
         self.public_methods.extend(add_sg(self.protected_fields, ss, gg, self.snake_case))
+        templated_class=self.name
+        if self.template_types:
+            templated_class=templated_class+'<'+', '.join(self.template_types)+'>'
+        for m in self.public_methods:
+            m.class_name=templated_class
+        for m in self.protected_methods:
+            m.class_name=templated_class
+        for m in self.private_methods:
+            m.class_name=templated_class
         if not self.del_comments:
             self.comment_methods()
 
@@ -189,7 +199,7 @@ class class_:
     
         if custom:
             for constructor_params in custom:
-                ret.append(method(name=self.name, args=constructor_params))
+                ret.append(method(name=self.name, args=constructor_params, class_name=self.name))
         if   vd==0:
             ret.append(method(name='~'+self.name))
         elif vd==1:
@@ -199,6 +209,10 @@ class class_:
         elif vd==3:
             self.protected_methods.append(method(name='~'+self.name, pre_modifier='virtual'))
         self.public_methods.extend(ret)
+        for m in self.public_methods:
+            m.class_name=templated_class
+        for m in self.protected_methods:
+            m.class_name=templated_class
 
 
     def decl(self, ts=' '*4):
@@ -266,30 +280,29 @@ class class_:
         cpp=''
         cppt=''
         methods=self.public_methods+self.protected_methods+self.private_methods
-        for v in self.private_fields+self.protected_fields:
+        class_fields=self.private_fields+self.protected_fields
+        templated_class=self.name
+        if self.template_types:
+            templated_class=templated_class+'<'+', '.join(self.template_types)+'>'
+        for v in class_fields:
             if v.pre_modifier=='static':
-                spp+=('static '+v.type+' '+self.name+'::'+v.name+';\n')
+                spp+=('static '+v.type+' '+templated_class+'::'+v.name+';\n')
         for v in methods:
             if v.pre_modifier=='static':
-                a=''
-                spp+=('static '+v.type+' '+self.name+'::'+v.name+'('+a+')')
-        spp+='\n'
-        templated_class=class_name
-        if template_types and  isinstance(template_types,list):
-            templated_class=templated_class+'<'+', '.join(template_types)+'>'
+                spp+=v.impl()+'\n'
         for m in methods:
+            if m.hint=='setter' or m.hint=='getter' or m.pre_modifier=='static':
+                continue
             if (m.post_modifier and m.post_modifier not in not_cpp_post_mod) or not m.post_modifier:
                 is_template=False
-                if self.template_types and  isinstance(template_types,list):
-                    cppt=cppt+"template <class "+', class '.join(template_types)+'>\n'
+                if self.template_types and  isinstance(self.template_types,list):
+                    cppt=cppt+"template <class "+', class '.join(self.template_types)+'>\n'
                 if m.template_args:
                     is_template=True
-                    cppt=cppt+"template <class "+', class '.join(m.template_args)+'>\n'
-                if not is_template:
-                    cpp+=(m.impl(class_fields=class_fields)+'\n\n')
-                 else:
                     cppt+=(m.impl(class_fields=class_fields)+'\n\n')
-        if template_types and  isinstance(template_types,list):
+                else:
+                    cpp+=(m.impl(class_fields=class_fields)+'\n\n')
+        if self.template_types and  isinstance(self.template_types,list):
             cppt=cppt+cpp
             cpp=''
         else:

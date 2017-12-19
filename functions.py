@@ -75,7 +75,7 @@ class method:
         if self.post_modifier:
             ret+=(' '+self.post_modifier)
         if self.hint=='getter' or self.hint=='setter':
-            ret+='{ '+self.body+' }'
+            ret+='\n{ '+self.body+' }'
         else:
             ret+=';'
         return ret
@@ -145,7 +145,7 @@ class method:
             else:
                 ret+=('if (this != &x)\n'+ts+'{\n')
             ret+=(ts*2+'\n'+ts+'}\n'+ts+'return *this;')
-        ret+='\n}'
+        ret+='\n}\n'
         return ret
 
 # for generating a bunch of dummy functions
