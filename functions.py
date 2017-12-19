@@ -39,7 +39,7 @@ class method:
         self.__dict__.update(kwargs)
         if self.pre_modifier:
             if self.pre_modifier in pre_method_modifiers:
-                if self.name==class_name:
+                if self.name==self.class_name:
                     raise Exception("constructor cannot have pre-modifiers")
             else:
                 raise Exception("Undefined pre-modifier: "+str(self.pre_modifier))
@@ -152,7 +152,7 @@ def funcs(line):
             pre=pre[0]
         else:
             pre=None
-        return_type=return_type.rstrip()
+        return_type=' '.join(return_type).rstrip()
         name=a.group(2)
         template_list=a.group(3)
         if template_list:
@@ -179,14 +179,18 @@ def funcs(line):
                     kv1=a1.split('=')
                     value=None
                     if len(kv1)==2:
-                        type_name=kv[0]
+                        type_name=kv1[0]
                         value=kv1[1]
                     else:
                         type_name=a1
                         value=None
                     *type_f, var_name=type_name.split(' ')
                     pre_mod=None
-                    if type_f[0]=='const':
+                    print(type_f)
+                    print(var_name)
+                    if not type_f:
+                        new_args.append(arg(pre_modifier=pre_mod, type=var_name, value=value))
+                    elif type_f[0]=='const':
                         pre_mod='const'
                         type_f=type_f[1:]
                     new_args.append(arg(pre_modifier=pre_mod, type=' '.join(type_f), name=var_name, value=value))

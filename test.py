@@ -1,5 +1,5 @@
-from class_gen import class_, consts, virtuals
-from functions import method, funcs, statics
+from class_gen import class_, consts, virtuals, parent
+from functions import method, funcs, statics, create_comments, add_methods
 from enums import enum, switch, get_all_enums
 
 e0=enum('my_enum', 'q w e r=10 t y ')
@@ -38,7 +38,11 @@ hpp, cpp, cppt=add_methods('', [], foo, [])
 
 print ('----------------------------------class--------------------------------------')
 
-c=class_('U V T', 'par1 par2', name='s', public_methods=bar, protected_methods=s, private_fields='int a;static std::string name;View<int> v;Sing<U, T> sss;',protected_fields='char x;std::vector<std::string> s;', set=['private', 'protected'], get=['private', 'protected'])
+c=class_(template_types='U V T', parents='par1, par2', name='s', 
+        public_methods=bar, protected_methods=s, 
+        private_fields='int a;static std::string name;View<int> v;Sing<U, T> sss;',
+        protected_fields='char x;std::vector<std::string> s;', 
+        set=['private', 'protected'], get=['private', 'protected'])
 c.comment_methods()
 c.basic_class_content(dd=0, dc=1, dm=2, vd=3)
 

@@ -3,7 +3,7 @@ import os
 import re
 import json
 from itertools import groupby
-from functions import arg, method, add_methods
+from functions import arg, method, add_methods, create_comments
 from header_detection import subtypes_autodetection
 
 pre_field_modifiers    = ['static', 'const', 'mutable']
@@ -14,6 +14,10 @@ class parent:
     type           = 'public'
     name           = ''
     template_types = []
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+    def __str__(self):
+        return self.type+' '+self.name+' <'+str(self.template_types)+'>'
 
 class class_:
     template_types     = []
@@ -37,13 +41,17 @@ class class_:
     get                = []
     
     def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
         if 'template_types' in kwargs:
+            self.template_types=[]
             if isinstance(kwargs['template_types'], str):
                 self.template_types=kwargs['template_types'].split(' ')
         if 'parents' in kwargs:
             if isinstance(kwargs['parents'], str):
-                self.parents=kwargs['parents'].split(' ')
-        self.__dict__.update(kwargs)
+                s=kwargs['parents'].split(',')
+                self.parents=[]
+                for d in s:
+                    self.parents.append(parent(name=d))
         if not self.del_comments:
             self.comment_methods()
 
@@ -167,6 +175,7 @@ class class_:
             for p in self.private_fields:
                 ret+=(str(p)+'; //!< \n'+ts*2)
         ret+='\n};\n'
+        return ret
 
 def fields(line):
     line=line.replace('\n','')
