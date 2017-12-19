@@ -4,7 +4,7 @@ import re
 import json
 from itertools import groupby
 from functions import arg, method, add_methods
-from header_detection import subtype_autodetection
+from header_detection import subtypes_autodetection
 
 pre_field_modifiers    = ['static', 'const', 'mutable']
 pre_var_modifiers      = ['static', 'const', 'extern']
@@ -37,6 +37,12 @@ class class_:
     get                = []
     
     def __init__(self, **kwargs):
+        if 'template_types' in kwargs:
+            if isinstance(kwargs['template_types'], str):
+                self.template_types=kwargs['template_types'].split(' ')
+        if 'parents' in kwargs:
+            if isinstance(kwargs['parents'], str):
+                self.parents=kwargs['parents'].split(' ')
         self.__dict__.update(kwargs)
         if not self.del_comments:
             self.comment_methods()
@@ -64,7 +70,7 @@ class class_:
         templated_class=self.name
         if self.template_types and  isinstance(self.template_types,list):
             templated_class=templated_class+'<'+', '.join(self.template_types)+'>'
-		
+        
         default=method(name=self.name)
         if dd==0:
             default.post_modifier="noexcept"
@@ -248,12 +254,12 @@ def create_class(class_name,template_types=None, class_parents=None,
     autodetected=[]
     if cc['fields']:
         for v in cc['fields']:
-            autodetected.extend(subtypes_autodetection(, deps_includes))
+            autodetected.extend(subtypes_autodetection(v, deps_includes))
     if cc['methods']:
         for v in cc['methods']:
             autodetected.extend(subtypes_autodetection(v, deps_includes))
-     sgetters=add_sg(private_vars, private_setters, private_getters)
-     sgetters.extend(add_sg(protected_vars, protected_setters, protected_getters))
+    sgetters=add_sg(private_vars, private_setters, private_getters)
+    sgetters.extend(add_sg(protected_vars, protected_setters, protected_getters))
     pub=[]
     if isinstance(public_methods, list):
         pub.extend(public_methods)

@@ -28,32 +28,32 @@ def subtypes_autodetection(typ, deps_includes):
     # Cleaning
     if not typ:
         return autodetected
-	types=[]
-	if isinstance(typ, method):
-		types=[typ.return_type, ]
-		for i in t1.args:
-			types.append(i.type)
-	elif isinstance(typ, arg):
-		types.append(typ.type)
-	for t1 in types:
-	    for pre in pre_field_modifiers:
-    	    t1=re.sub(str(pre)+'\s+', '', t1)
-	    for inc, t in stl.items():
-    	    if any("std::"+substring in t1 for substring in t):
-        	    if inc=='containers':
-            	    for substring in t:
-                	    if "std::"+substring in t1:
-                    	    autodetected.append(substring)
-	            elif inc not in autodetected:
-    	            autodetected.append(inc)
-	    if t1[0]=='Q' and len(t1)!=1:
-    	    del_templ=re.sub('<.*>', '', t1)
-        	autodetected.append(del_templ)
-	    elif isinstance(deps_includes, list):
-    	    for dep in deps_includes:
-        	    for file in os.walkdir(dep):
-            	    if "class "+t1 in open(file).read():
-                	    autodetected.append(file)
+    types=[]
+    if isinstance(typ, method):
+        types=[typ.return_type, ]
+        for i in t1.args:
+            types.append(i.type)
+    elif isinstance(typ, arg):
+        types.append(typ.type)
+    for t1 in types:
+        for pre in pre_field_modifiers:
+            t1=re.sub(str(pre)+'\s+', '', t1)
+        for inc, t in stl.items():
+            if any("std::"+substring in t1 for substring in t):
+                if inc=='containers':
+                    for substring in t:
+                        if "std::"+substring in t1:
+                            autodetected.append(substring)
+                elif inc not in autodetected:
+                    autodetected.append(inc)
+        if t1[0]=='Q' and len(t1)!=1:
+            del_templ=re.sub('<.*>', '', t1)
+            autodetected.append(del_templ)
+        elif isinstance(deps_includes, list):
+            for dep in deps_includes:
+                for file in os.walkdir(dep):
+                    if "class "+t1 in open(file).read():
+                        autodetected.append(file)
     return autodetected
 
 

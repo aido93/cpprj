@@ -23,7 +23,7 @@ def get_all_enums(text):
                     ret[''].extend(elements)
     return ret
 
-def gen_enum(name, elements, upper=False, is_class=True, ts=' '*4):
+def enum(name, elements, upper=False, is_class=True, ts=' '*4):
     elements=re.sub('\s+',' ', elements)
     elements=elements.split(' ')
     if upper:
