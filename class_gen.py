@@ -295,12 +295,15 @@ class class_:
                 continue
             if (m.post_modifier and m.post_modifier not in not_cpp_post_mod) or not m.post_modifier:
                 is_template=False
+                a=''
                 if self.template_types and  isinstance(self.template_types,list):
-                    cppt=cppt+"template <class "+', class '.join(self.template_types)+'>\n'
+                    a="template <class "+', class '.join(self.template_types)+'>\n'
                 if m.template_args:
                     is_template=True
+                    cppt+=a
                     cppt+=(m.impl(class_fields=class_fields)+'\n\n')
                 else:
+                    cpp+=a
                     cpp+=(m.impl(class_fields=class_fields)+'\n\n')
         if self.template_types and  isinstance(self.template_types,list):
             cppt=cppt+cpp
