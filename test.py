@@ -35,15 +35,20 @@ s=statics('void log(const std::string& msg); std::list<logger> get_loggers() con
 bar_comments=create_comments(bar)
 
 hpp, cpp, cppt=add_methods('', [], foo, [])
-
+print ('-------------------------------func hpp-----------------------------------')
+print(hpp)
+print ('-------------------------------func cpp-----------------------------------')
+print(cpp)
+print ('-------------------------------func cppt-----------------------------------')
+print(cppt)
 print ('----------------------------------class--------------------------------------')
 
-c=class_(template_types='U V T', parents='par1, par2', name='s', 
+c=class_(template_types='U V T', parents='par1, par2', name='example', 
         public_methods=bar, protected_methods=s, 
         private_fields='int a;static std::string name;View<int> v;Sing<U, T> sss;',
         protected_fields='char x;std::vector<std::string> s;', 
         set=['private', 'protected'], get=['private', 'protected'])
-c.comment_methods()
 c.basic_class_content(dd=0, dc=1, dm=2, vd=3)
+c.comment_methods()
 
 print(c.decl())

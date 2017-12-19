@@ -128,10 +128,18 @@ class method:
                     i=i+1
                 ret+='\n'
         ret+='\n{\n'+ts
+        nulls=['int', 'unsigned int', 'uint32_t', 'int32_t', 'long', 'unsigned long', 'ulong']
         if self.body:
             ret+=self.body
         elif self.return_type and self.return_type!='void' and self.hint!='move' and self.hint!='copy':
-            ret+=self.return_type+' ret;\n'+ts+'\n'+ts+'return ret;'
+            ret+=self.return_type+' ret'
+            if '*' in self.return_type:
+                ret+='=nullptr'
+            elif self.return_type in nulls:
+                ret+='=0'
+            elif self.return_type=='bool':
+                ret+='=false'
+            ret+=';\n'+ts+'\n'+ts+'return ret;'
         elif self.return_type and self.hint=='copy':
             if self.args[0].name!='':
                 ret+=('if (this != &'+self.args[0].name+')\n'+ts+'{\n')
@@ -333,9 +341,9 @@ def add_methods(class_name, template_types, methods, class_fields, ts=' '*4, del
                 is_template=True
                 cpp_template=cpp_template+"template <class "+', class '.join(m.template_args)+'>\n'
             if not is_template:
-                cpp+=m.impl(class_fields=class_fields)
+                cpp+=(m.impl(class_fields=class_fields)+'\n\n')
             else:
-                cpp_template+=m.impl(class_fields=class_fields)
+                cpp_template+=(m.impl(class_fields=class_fields)+'\n\n')
         if template_types and  isinstance(template_types,list):
             cpp_template=cpp_template+cpp
             cpp=''
