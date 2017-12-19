@@ -4,7 +4,7 @@ import re
 import json
 from itertools import groupby
 from decor import to_snake, to_camel
-from functions import arg, method, add_methods, create_comments
+from functions import arg, method, create_comments
 from header_detection import subtypes_autodetection
 
 pre_field_modifiers    = ['static', 'const', 'mutable']
@@ -345,34 +345,6 @@ def create_class(class_name,template_types=None, class_parents=None,
         pub.extend(public_methods)
     if isinstance(sgetters, list):
         pub.extend(sgetters)
-    hpp, cpp, cppt=add_methods(class_name, template_types, pub, class_fields, ts )
-    hpp1, cpp1, cppt1='', '', ''
-    hpp2, cpp2, cppt2='', '', ''
-    ts=' '*tabstop
-    ret="""/**
- * \\brief
- * \\details
- **/\n"""
-    ret=ret+hpp
-    ret=ret+'\n'+ts*2
-    if protected_vars or protected_methods:
-        ret=ret+'\n'+ts+'protected:\n'
-    if protected_vars:
-        for v in protected_vars:
-            ret=ret+ts*2+v.type+' '+v.name+'; //!< \n'
-    if protected_methods:
-        hpp1, cpp1, cppt1=add_methods(class_name, template_types, protected_methods, class_fields, ts)
-        ret=ret+hpp1
-        ret=ret+'\n'+ts*2
-    ret=ret+'\n'+ts+'private:\n'
-    if private_vars:
-        for v in private_vars:
-            ret=ret+ts*2+v.type+' '+v.name+'; //!< \n'
-    if private_methods:
-        hpp2, cpp2, cppt2=add_methods(class_name, template_types, private_methods, class_fields, ts)
-        ret=ret+hpp2
-        ret=ret+'\n'+ts*2
-    ret=ret+"\n};\n\n"
     headers = [el for el, _ in groupby(sorted(autodetected))]
     return (headers, ret, cpp+cpp1+cpp2, cppt+cppt1+cppt2)
 

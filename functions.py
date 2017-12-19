@@ -313,37 +313,3 @@ def create_comments(methods):
         i=i+1
     return ret
 
-def add_methods(class_name, template_types, methods, class_fields, ts=' '*4, del_comments=False):
-    hpp=""
-    cpp=""
-    cpp_template=""
-    c=[]
-    if not del_comments:
-        c=create_comments(methods)
-    i=1
-    for m in methods:
-        if c and i in c:
-            hpp+=c[i]
-        hpp+=m.decl()
-        hpp+='\n\n'
-        i=i+1
-    templated_class=class_name
-    if template_types and  isinstance(template_types,list):
-        templated_class=templated_class+'<'+', '.join(template_types)+'>'
-    for m in methods:
-        if (m.post_modifier and m.post_modifier not in not_cpp_post_mod) or not m.post_modifier:
-            is_template=False
-            if template_types and  isinstance(template_types,list):
-                cpp_template=cpp_template+"template <class "+', class '.join(template_types)+'>\n'
-            if m.template_args:
-                is_template=True
-                cpp_template=cpp_template+"template <class "+', class '.join(m.template_args)+'>\n'
-            if not is_template:
-                cpp+=(m.impl(class_fields=class_fields)+'\n\n')
-            else:
-                cpp_template+=(m.impl(class_fields=class_fields)+'\n\n')
-        if template_types and  isinstance(template_types,list):
-            cpp_template=cpp_template+cpp
-            cpp=''
-    return (hpp, cpp, cpp_template)
-

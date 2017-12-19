@@ -1,5 +1,5 @@
 from class_gen import class_, consts, virtuals, parent
-from functions import method, funcs, statics, create_comments, add_methods
+from functions import method, funcs, statics, create_comments
 from enums import enum, switch, get_all_enums
 
 e0=enum('my_enum', 'q w e r=10 t y ')
@@ -33,15 +33,6 @@ for f in foo:
 
 s=statics('void log(const std::string& msg); std::list<logger> get_loggers() const')
 bar_comments=create_comments(bar)
-
-hpp, cpp, cppt=add_methods('', [], foo, [])
-print ('-------------------------------func hpp-----------------------------------')
-print(hpp)
-print ('-------------------------------func cpp-----------------------------------')
-print(cpp)
-print ('-------------------------------func cppt-----------------------------------')
-print(cppt)
-print ('----------------------------------class--------------------------------------')
 
 c=class_(template_types='U V T', parents='par1, par2', name='example', 
         public_methods=bar, protected_methods=s, 
