@@ -9,6 +9,7 @@ from header_detection import subtypes_autodetection
 
 pre_field_modifiers    = ['static', 'const', 'mutable']
 pre_var_modifiers      = ['static', 'const', 'extern']
+not_cpp_post_mod       = ['=delete', '=0', '=default']
 post_class_modifiers   = ['final', ]
 
 class parent:
@@ -259,6 +260,42 @@ class class_:
                 ret+=(str(p)+';'+' '*(max_len-len(str(p))+1)+'//!< \n'+ts*2)
         ret+='\n};\n'
         return ret
+    
+    def impl(self, ts=' '*4):
+        spp=''
+        cpp=''
+        cppt=''
+        methods=self.public_methods+self.protected_methods+self.private_methods
+        for v in self.private_fields+self.protected_fields:
+            if v.pre_modifier=='static':
+                spp+=('static '+v.type+' '+self.name+'::'+v.name+';\n')
+        for v in methods:
+            if v.pre_modifier=='static':
+                a=''
+                spp+=('static '+v.type+' '+self.name+'::'+v.name+'('+a+')')
+        spp+='\n'
+        templated_class=class_name
+        if template_types and  isinstance(template_types,list):
+            templated_class=templated_class+'<'+', '.join(template_types)+'>'
+        for m in methods:
+            if (m.post_modifier and m.post_modifier not in not_cpp_post_mod) or not m.post_modifier:
+                is_template=False
+                if self.template_types and  isinstance(template_types,list):
+                    cppt=cppt+"template <class "+', class '.join(template_types)+'>\n'
+                if m.template_args:
+                    is_template=True
+                    cppt=cppt+"template <class "+', class '.join(m.template_args)+'>\n'
+                if not is_template:
+                    cpp+=(m.impl(class_fields=class_fields)+'\n\n')
+                 else:
+                    cppt+=(m.impl(class_fields=class_fields)+'\n\n')
+        if template_types and  isinstance(template_types,list):
+            cppt=cppt+cpp
+            cpp=''
+        else:
+            cpp=spp+cpp
+            spp=''
+        return (spp, cpp, cppt)
 
 def virtuals(line):
     l=funcs(line)
@@ -308,9 +345,9 @@ def create_class(class_name,template_types=None, class_parents=None,
         pub.extend(public_methods)
     if isinstance(sgetters, list):
         pub.extend(sgetters)
-    hpp, cpp, cpp_template=add_methods(class_name, template_types, pub, class_fields, ts )
-    hpp1, cpp1, cpp_template1='', '', ''
-    hpp2, cpp2, cpp_template2='', '', ''
+    hpp, cpp, cppt=add_methods(class_name, template_types, pub, class_fields, ts )
+    hpp1, cpp1, cppt1='', '', ''
+    hpp2, cpp2, cppt2='', '', ''
     ts=' '*tabstop
     ret="""/**
  * \\brief
@@ -324,7 +361,7 @@ def create_class(class_name,template_types=None, class_parents=None,
         for v in protected_vars:
             ret=ret+ts*2+v.type+' '+v.name+'; //!< \n'
     if protected_methods:
-        hpp1, cpp1, cpp_template1=add_methods(class_name, template_types, protected_methods, class_fields, ts)
+        hpp1, cpp1, cppt1=add_methods(class_name, template_types, protected_methods, class_fields, ts)
         ret=ret+hpp1
         ret=ret+'\n'+ts*2
     ret=ret+'\n'+ts+'private:\n'
@@ -332,12 +369,12 @@ def create_class(class_name,template_types=None, class_parents=None,
         for v in private_vars:
             ret=ret+ts*2+v.type+' '+v.name+'; //!< \n'
     if private_methods:
-        hpp2, cpp2, cpp_template2=add_methods(class_name, template_types, private_methods, class_fields, ts)
+        hpp2, cpp2, cppt2=add_methods(class_name, template_types, private_methods, class_fields, ts)
         ret=ret+hpp2
         ret=ret+'\n'+ts*2
     ret=ret+"\n};\n\n"
     headers = [el for el, _ in groupby(sorted(autodetected))]
-    return (headers, ret, cpp+cpp1+cpp2, cpp_template+cpp_template1+cpp_template2)
+    return (headers, ret, cpp+cpp1+cpp2, cppt+cppt1+cppt2)
 
 # TODO: Change maintainer to somebody from developers
 # TODO: Add simple variable checking to method body

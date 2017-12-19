@@ -1,7 +1,6 @@
 import re
 from difflib import SequenceMatcher
 
-not_cpp_post_mod     = ['=delete', '=0', '=default']
 constructor_post_mod = ['=delete', '=0', '=default', 'noexcept']
 pre_func_modifiers     = [  'static', 'inline', 'extern']
 post_func_modifiers    = []
