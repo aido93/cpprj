@@ -29,12 +29,16 @@ def fields(line):
     ret=[]
     for a in args:
         p=a.split(' ')
-        t=' '.join(p[:-1])
         kv=p[-1].split('=')
+        pm=None
+        if 'static' in p:
+            pm='static'
+            p.remove('static')
+        t=' '.join(p[:-1])
         if len(kv)==1:
-            ret.append(arg(type=t, name=kv[0]))
+            ret.append(arg(pre_modifier=pm, type=t, name=kv[0]))
         elif len(kv)==2:
-            ret.append(arg(type=t, name=kv[0], value=kv[1]))
+            ret.append(arg(pre_modifier=pm, type=t, name=kv[0], value=kv[1]))
     del ret[-1]
     return ret
 
