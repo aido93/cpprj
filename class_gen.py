@@ -187,7 +187,7 @@ class class_:
         ret.append(op)
         ret.append(copyc)
 
-        mop=method(return_type=templated_class, name="operator=", hint='move', args=[arg(pre_modifier='const', type=self.name+"&&"),])
+        mop=method(return_type=templated_class+'&', name="operator=", hint='move', args=[arg(pre_modifier='const', type=self.name+"&&"),])
         movec=method(name=self.name, hint='move', args=[arg(pre_modifier="const", type=self.name+"&&"),])
         if dm==0:
             movec.post_modifier="noexcept"
@@ -290,9 +290,13 @@ class class_:
             templated_class=templated_class+'<'+', '.join(self.template_types)+'>'
         for v in class_fields:
             if v.pre_modifier=='static':
+                if self.template_types and  isinstance(self.template_types,list):
+                    spp+="template <class "+', class '.join(self.template_types)+'>\n'
                 spp+=('static '+v.type+' '+templated_class+'::'+v.name+';\n')
         for v in methods:
             if v.pre_modifier=='static':
+                if self.template_types and  isinstance(self.template_types,list):
+                    spp+="template <class "+', class '.join(self.template_types)+'>\n'
                 spp+=v.impl()+'\n'
         for m in methods:
             if m.hint=='setter' or m.hint=='getter' or m.pre_modifier=='static':
