@@ -19,6 +19,23 @@ class parent:
     def __str__(self):
         return self.type+' '+self.name+' <'+str(self.template_types)+'>'
 
+def fields(line):
+    line=line.replace('\n','')
+    line=line.replace(';','; ')
+    line=re.sub('\s+',' ', line)
+    args=line.split('; ')
+    ret=[]
+    for a in args:
+        p=a.split(' ')
+        t=' '.join(p[:-1])
+        kv=p[-1].split('=')
+        if len(kv)==1:
+            ret.append(arg(type=t, name=kv[0]))
+        elif len(kv)==2:
+            ret.append(arg(type=t, name=kv[0], value=kv[1]))
+    del ret[-1]
+    return ret
+
 class class_:
     template_types     = []
     parents            = []
@@ -52,6 +69,12 @@ class class_:
                 self.parents=[]
                 for d in s:
                     self.parents.append(parent(name=d))
+        if 'private_fields' in kwargs:
+            if isinstance(kwargs['private_fields'], str):
+                self.private_fields=fields(kwargs['private_fields'])
+        if 'protected_fields' in kwargs:
+            if isinstance(kwargs['protected_fields'], str):
+                self.protected_fields=fields(kwargs['protected_fields'])
         if not self.del_comments:
             self.comment_methods()
 
@@ -137,10 +160,14 @@ class class_:
         ret+="class "+self.name
         if self.parents:
             ret+=' : '
+            i=1
             for p in self.parents:
                 ret+=(p.type+' '+p.name)
                 if p.template_types:
                     ret+=('<'+', '.join(p.template_types)+'>')
+                if i<len(self.parents):
+                    ret+=', '
+                i=i+1
         if self.post_modifier:
             ret+=self.post_modifier
         ret+='\n{\n'+ts+'public:\n'+ts*2
@@ -148,8 +175,8 @@ class class_:
             i=1
             for p in self.public_methods:
                 if self.public_comments and i in self.public_comments:
-                    ret+=self.public_comments[i]
-                ret+=p.decl()
+                    ret+=self.public_comments[i].replace('\n','\n'+ts*2)
+                ret+=(p.decl().replace('\n','\n'+ts*2)+'\n'+ts*2)
                 i=i+1
         if self.protected_methods or self.protected_fields:
             ret+=('\n'+ts+'protected:\n'+ts*2)
@@ -157,8 +184,8 @@ class class_:
                 i=1
                 for p in self.protected_methods:
                     if self.protected_comments and i in self.protected_comments:
-                        ret+=self.protected_comments[i]
-                    ret+=(p.decl()+'\n'+ts*2)
+                        ret+=self.protected_comments[i].replace('\n','\n'+ts*2)
+                    ret+=(p.decl().replace('\n','\n'+ts*2)+'\n'+ts*2)
                     i=i+1
             if self.protected_fields:
                 for p in self.protected_fields:
@@ -168,31 +195,14 @@ class class_:
             i=1
             for p in self.private_methods:
                 if self.private_comments and i in self.private_comments:
-                    ret+=self.private_comments[i]
+                    ret+=self.private_comments[i].replace('\n','\n'+ts*2)
                 i=i+1
-                ret+=(p.decl()+'\n'+ts*2)
+                ret+=(p.decl().replace('\n','\n'+ts*2)+'\n'+ts*2)
         if self.private_fields:
             for p in self.private_fields:
                 ret+=(str(p)+'; //!< \n'+ts*2)
         ret+='\n};\n'
         return ret
-
-def fields(line):
-    line=line.replace('\n','')
-    line=line.replace(';','; ')
-    line=re.sub('\s+',' ', line)
-    args=line.split('; ')
-    ret=[]
-    for a in args:
-        p=a.split(' ')
-        t=' '.join(p[:-1])
-        kv=p[-1].split('=')
-        if len(kv)==1:
-            ret.append(arg(type=t, name=kv[0]))
-        elif len(kv)==2:
-            ret.append(arg(type=t, name=kv[0], value=kv[1]))
-    del ret[-1]
-    return ret
 
 def virtuals(line):
     l=funcs(line)

@@ -70,7 +70,7 @@ class method:
             ret+=self.return_type+' '
         ret+=self.name+' ('+a+')'
         if self.post_modifier:
-            ret+=self.post_modifier
+            ret+=(' '+self.post_modifier)
         if self.hint=='getter' or self.hint=='setter':
             ret+='{ '+self.body+' }'
         else:
@@ -148,11 +148,10 @@ def funcs(line):
         return_type=re.sub('\s+',' ',a.group(1))
         pre=return_type.split(' ')
         if pre[0] in pre_method_modifiers or pre[0] in pre_func_modifiers:
-            return_type=pre[1:]
+            return_type=' '.join(pre[1:]).rstrip()
             pre=pre[0]
         else:
             pre=None
-        return_type=' '.join(return_type).rstrip()
         name=a.group(2)
         template_list=a.group(3)
         if template_list:
