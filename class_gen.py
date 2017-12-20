@@ -99,6 +99,7 @@ class class_:
     set                = []
     get                = []
     snake_case         = True
+    pre_class          = ''
     
     def __init__(self, **kwargs):
         self.public_methods=[]
@@ -336,7 +337,29 @@ class class_:
         autodetected.extend(subtypes_autodetection(types))
         headers = [el for el, _ in groupby(sorted(autodetected))]
         return headers
-
+    
+    def save(self, namespace, directory, user, email):
+        b=self.pre_class+'\n'
+        b+=self.decl()
+        impl=self.impl()
+        if self.template_types:
+            b+=('\n#include "'+self.name+'_impl.hpp"')
+        elif impl[2]:
+            b+=('\n'+impl[2])
+        a=namespace(namespace, b)
+        a=includes(None, c.autodetect(), None)+a
+        a=header(self.name, user, email)+a
+        f = open(os.path.join(directory, 'include', self.name+'.hpp'), 'w')
+        f.write(a)
+        f.close()
+        if not self.template_types:
+            f = open(os.path.join(directory, 'src', self.name+'.cpp'), 'w')
+            f.write(a)
+            f.close()
+        else:
+            f = open(os.path.join(directory, 'include', self.name+'_impl.hpp'), 'w')
+            f.write(impl[2])
+            f.close()
 
 def virtuals(line):
     l=funcs(line)
