@@ -100,6 +100,8 @@ class class_:
     get                = []
     snake_case         = True
     pre_class          = ''
+    post_class_hpp     = ''
+    post_class_cpp     = ''
     
     def __init__(self, **kwargs):
         self.public_methods=[]
@@ -349,6 +351,7 @@ class class_:
         a=namespace(namespace, b)
         a=includes(None, c.autodetect(), None)+a
         a=header(self.name, user, email)+a
+        a+=self.post_class_hpp
         f = open(os.path.join(directory, 'include', self.name+'.hpp'), 'w')
         f.write(a)
         f.close()
@@ -358,7 +361,7 @@ class class_:
             f.close()
         else:
             f = open(os.path.join(directory, 'include', self.name+'_impl.hpp'), 'w')
-            f.write(impl[2])
+            f.write(impl[2]+'\n'+self.post_class_cpp)
             f.close()
 
 def virtuals(line):

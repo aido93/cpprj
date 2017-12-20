@@ -1,21 +1,6 @@
 from class_gen import class_, virtuals, parent
-from decor import to_snake, to_camel, comment_print
+from decor import change, normalize, comment_print
 from functions import funcs
-
-def change(string, snake_case):
-    if snake_case:
-        return to_snake(string)
-    else:
-        return to_camel(string)
-
-def normalize(string):
-    if isinstance(string, 'str'):
-        line=string
-        line=line.replace('\n','')
-        line=re.sub('\s+',' ', line)
-        return line.split(' ')
-    else:
-        return string
 
 def factory(name, factories, products, namespace, directory, user, email, snake_case=False):
 

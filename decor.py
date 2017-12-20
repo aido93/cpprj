@@ -14,6 +14,21 @@ def to_snake(name):
     s1 = first_cap_re.sub(r'\1_\2', name)
     return all_cap_re.sub(r'\1_\2', s1).lower()
 
+def change(string, snake_case):
+    if snake_case:
+        return to_snake(string)
+    else:
+        return to_camel(string)
+
+def normalize(string):
+    if isinstance(string, 'str'):
+        line=string
+        line=line.replace('\n','')
+        line=re.sub('\s+',' ', line)
+        return line.split(' ')
+    else:
+        return string
+
 def header(class_name, author, email):
     return """/**
  * Description: Interface to the """+class_name+"""-class
