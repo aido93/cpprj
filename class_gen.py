@@ -9,7 +9,8 @@ from header_detection import subtypes_autodetection
 
 not_cpp_post_mod       = ['=delete', '=0', '=default']
 post_class_modifiers   = ['final', ]
-
+generic_types          = [  'char', 'unsigned char', 'bool', 'short', 'unsigned short', 'int', 'unsigned int', 'long', 'unsigned long', 'float', 'double', 'long long',
+                            'int8_t', 'uint8_t', 'int16_t', 'uint16_t', 'int32_t', 'uint32_t', 'int64_t', 'uint64_t']
 class parent:
     type           = 'public'
     name           = ''
@@ -63,7 +64,10 @@ def add_sg(var, setters, getters, snake_case):
                  if t.find('static ')!=-1:
                      t=t.replace('static ','')
                      pm='static'
-            args=[arg(type="const "+t+'&', name='_'+v.name), ]
+            if t in generic_types:
+                args=[arg(type=t, name='_'+v.name), ]
+            else:
+                args=[arg(pre_modifier="const ", type=t+'&', name='_'+v.name), ]
             sgetters.append(method( return_type='void',
                                     name=setter,
                                     args=args,
@@ -327,7 +331,7 @@ class class_:
         m=self.private_methods + self.protected_methods + self.public_methods
         autodetected=[]
         for v in m:
-        	autodetected.extend(v.autodetected)
+            autodetected.extend(v.autodetected)
         autodetected.extend(subtypes_autodetection(types))
         headers = [el for el, _ in groupby(sorted(autodetected))]
         return headers

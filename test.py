@@ -18,6 +18,7 @@ c=class_(template_types=None, parents='par1, par2', name=class_name,
 c.parents[1].type='private'
 c.basic_class_content(dd=0, dc=1, dm=2, vd=3)
 c.comment_methods()
+# Pre-code definitions
 e0=enum('my_enum4', '   o p u k l ',  upper=False, is_class=False)
 b=e0+'\n'
 b+=flags('flags', 'a b c d e')+'\n'
