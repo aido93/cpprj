@@ -10,7 +10,7 @@ def comment_print(n, text):
 class_name='example'
 foo=funcs("int main(void);void main(void);int main(int argc, char**argv);char* memset(void* begin, uint32_t count, char symbol);")
 bar=funcs("std::vector<uint32_t> get_all<T>(const T&); static std::map<uint32_t,std::vector<int>> get_list(const std::string&str);")
-c=class_(template_types='U V T', parents='par1, par2', name=class_name, 
+c=class_(template_types='', parents='par1, par2', name=class_name, 
         public_methods=foo, protected_methods=bar, 
         private_fields='int a;static std::string name;View<int> v;Sing<U, T> sss;',
         protected_fields='char x;std::vector<std::string> s;', 
