@@ -39,8 +39,8 @@ def namespace(ns, body, ts=' '*4):
     ns1=''
     if isinstance(ns, list):
         ns1="::".join(ns)
-    if isinstance(namespaces_name, str):
+    if isinstance(ns, str):
         ns1=ns
     if ns1=='':
         return body
-    return '/**\n * \\brief '+ns1+' - \n **/\n namespace '+ns1+'{\n'+ts+body.replace('\n',ts)+"\n}; //"+namespace_name.upper()+" namespace\n"
+    return '\n/**\n * \\brief '+ns1+' - \n **/\nnamespace '+ns1+'{\n'+ts+body.replace('\n','\n'+ts)+"\n}; //"+ns1.upper()+" namespace\n"
