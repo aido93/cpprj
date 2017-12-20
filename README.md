@@ -15,8 +15,8 @@ dot (for diagrams in Doxygen)
 
 git clone https://github.com/aido93/cpprj
 
-cd cpprj && python3 ./test
+cd cpprj && python3 ./test.py
 
 How to use:
 
-Just run `python3 ./test` and see result
+Just run `python3 ./test.py` and see result
