@@ -2,10 +2,7 @@ from class_gen import class_, consts, virtuals, parent
 from functions import method, funcs, statics, create_comments
 from enums import enum, switch, get_all_enums
 from structs import struct, flags
-from decor import header, includes, namespace
-
-def comment_print(n, text):
-	print ('\n//'+'-'*n+text+'-'*n)
+from decor import header, includes, namespace, comment_print
 
 class_name='example'
 foo=funcs("int main(void);void main(void);int main(int argc, char**argv);char* memset(void* begin, uint32_t count, char symbol);")
@@ -32,14 +29,14 @@ a=namespace('my_namespace', b)
 a=includes(None, c.autodetect(), None)+a
 a=header(class_name, 'tester', 'test@test.com')+a
 
-comment_print(25, class_name+'.hpp')
+comment_print(25, c.name+'.hpp')
 print(a)
 
 if c.template_types:
-	comment_print(25, class_name+'_impl.hpp')
+	comment_print(25, c.name+'_impl.hpp')
 	im=impl[2]
 else:
-	comment_print(25, class_name+'.cpp')
+	comment_print(25, c.name+'.cpp')
 	im='#include "'+class_name+'.hpp"\n\n'
 	im+=impl[0]
 	im+=impl[1]

@@ -101,6 +101,9 @@ class class_:
     snake_case         = True
     
     def __init__(self, **kwargs):
+        self.public_methods=[]
+        self.protected_methods=[]
+        self.private_methods=[]
         self.__dict__.update(kwargs)
         if 'template_types' in kwargs:
             self.template_types=[]
@@ -161,7 +164,6 @@ class class_:
     # dd=1 - deleted constructor
     # dd=2 - default constructor
     def basic_class_content(self, dd=0, dc=0, dm=0, vd=0, custom=None):
-        ret=[]
         templated_class=self.name
         if self.template_types and  isinstance(self.template_types,list):
             templated_class=templated_class+'<'+', '.join(self.template_types)+'>'
@@ -173,7 +175,7 @@ class class_:
             default.post_modifier="=delete"
         elif dd==2:
             default.post_modifier="=default"
-        ret.append(default)
+        self.public_methods.append(default)
 
         op=method(return_type=templated_class, name="operator=", hint='copy', args=[arg(pre_modifier='const', type=self.name+"&"),])
         copyc=method(name=self.name, hint='copy', args=[arg(pre_modifier="const", type=self.name+"&"),])
@@ -186,8 +188,8 @@ class class_:
         elif dc==2:
             copyc.post_modifier="=default"
             op.post_modifier="=default"
-        ret.append(op)
-        ret.append(copyc)
+        self.public_methods.append(op)
+        self.public_methods.append(copyc)
 
         mop=method(return_type=templated_class+'&', name="operator=", hint='move', args=[arg(pre_modifier='const', type=self.name+"&&"),])
         movec=method(name=self.name, hint='move', args=[arg(pre_modifier="const", type=self.name+"&&"),])
@@ -200,21 +202,20 @@ class class_:
         elif dm==2:
             movec.post_modifier="=default"
             mop.post_modifier="=default"
-        ret.append(mop)
-        ret.append(movec)
+        self.public_methods.append(mop)
+        self.public_methods.append(movec)
     
         if custom:
             for constructor_params in custom:
-                ret.append(method(name=self.name, args=constructor_params, class_name=self.name))
+                self.public_methods.append(method(name=self.name, args=constructor_params, class_name=self.name))
         if   vd==0:
-            ret.append(method(name='~'+self.name))
+            self.public_methods.append(method(name='~'+self.name))
         elif vd==1:
-            ret.append(method(pre_modifier='virtual', name='~'+self.name))
+            self.public_methods.append(method(pre_modifier='virtual', name='~'+self.name))
         elif vd==2:
-            ret.append(method(pre_modifier='virtual', name='~'+self.name, post_modifier='=0'))
+            self.public_methods.append(method(pre_modifier='virtual', name='~'+self.name, post_modifier='=0'))
         elif vd==3:
             self.protected_methods.append(method(name='~'+self.name, pre_modifier='virtual'))
-        self.public_methods.extend(ret)
         for m in self.public_methods:
             m.class_name=templated_class
         for m in self.protected_methods:
