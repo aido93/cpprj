@@ -1,5 +1,6 @@
 import re
 from difflib import SequenceMatcher
+from header_detection import subtypes_autodetection
 
 constructor_post_mod = ['=delete', '=0', '=default', 'noexcept']
 pre_func_modifiers     = [  'static', 'inline', 'extern']
@@ -35,6 +36,7 @@ class method:
     post_modifier=None
     body=None
     hint=''
+    autodetected=[]
     
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
@@ -54,6 +56,12 @@ class method:
                 raise Exception("Undefined post-modifier: "+str(self.post_modifier))
         if 'return_type' in kwargs:
             self.return_type=kwargs['return_type'].rstrip()
+        types=[]
+        types.append(self.return_type)
+        if self.args:
+            for i in self.args:
+                types.append(i.type)
+        self.autodetected=subtypes_autodetection(types)
     
     def decl(self):
         a=''
@@ -108,7 +116,7 @@ class method:
             ret+=self.class_name+'::'
         ret+=self.name+' ('+a+')'
         if self.post_modifier:
-            ret+=self.post_modifier
+            ret+=(' '+self.post_modifier)
         def similar(a, b):
             return SequenceMatcher(None, a, b).ratio()
         if not self.return_type and class_fields and len(self.args)>0 and self.name[0]!='~' and self.hint!='copy' and self.hint!='move':

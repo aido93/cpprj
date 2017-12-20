@@ -10,7 +10,7 @@ class field:
 
 #def get_all_structs(text):
 
-def gen_struct(name, fields, ts=4*' '):
+def struct(name, fields, ts=4*' '):
     text=[]
     for f in fields:
         if f.bits==0:
@@ -31,14 +31,14 @@ def gen_struct(name, fields, ts=4*' '):
     return 'struct '+name+'\n{\n'+ts+(';///> \n'+ts).join(text)+';///> \n};\n'
 
 def flags(name, line):
-	fields=re.sub('\s+', ' ', line)
+    fields=re.sub('\s+', ' ', line)
     fields=fields.split(' ')
     ff=[]
     for f in fields:
         if '=' in f:
-            name, val=f.split('=')
+            var_name, val=f.split('=')
         else:
-            name=f
+            var_name=f
             val=''
-        ff.append(field(bits=1, name=name, value=val))
-    return gen_struct(name, ff)
+        ff.append(field(bits=1, name=var_name, value=val))
+    return struct(name, ff)

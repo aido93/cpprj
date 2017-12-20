@@ -1,4 +1,5 @@
 import re
+import time
 
 def to_camel(snake_str):
     components = snake_str.split('_')

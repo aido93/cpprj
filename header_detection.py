@@ -1,5 +1,4 @@
 import re
-from functions import method, arg
 
 stl={
     'containers'            : [ "vector","list","map","queue","deque","string","array","set","stack","forward_list","unordered_set","unordered_map"],
@@ -23,21 +22,19 @@ stl={
     'complex'               : [ "complex",]
 }
 
-def subtypes_autodetection(typ, deps_includes):
+pre_field_modifiers    = ['static', 'const', 'mutable']
+pre_var_modifiers      = ['static', 'const', 'extern']
+
+def subtypes_autodetection(typ, deps_includes=[]):
     autodetected=[]
     # Cleaning
     if not typ:
         return autodetected
-    types=[]
-    if isinstance(typ, method):
-        types=[typ.return_type, ]
-        for i in t1.args:
-            types.append(i.type)
-    elif isinstance(typ, arg):
-        types.append(typ.type)
-    for t1 in types:
+    typ1 = [v for v in typ if v]
+    for t1 in typ1:
         for pre in pre_field_modifiers:
-            t1=re.sub(str(pre)+'\s+', '', t1)
+            if t1:
+                t1=re.sub(str(pre)+'\s+', '', t1)
         for inc, t in stl.items():
             if any("std::"+substring in t1 for substring in t):
                 if inc=='containers':

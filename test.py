@@ -1,7 +1,8 @@
 from class_gen import class_, consts, virtuals, parent
 from functions import method, funcs, statics, create_comments
 from enums import enum, switch, get_all_enums
-
+from structs import struct, flags
+from decor import header, includes, namespace
 e0=enum('my_enum', 'q w e r=10 t y ')
 e1=enum('', 'q w e r=10 t y ')
 e2=enum('my_enum2', 'a s d f=15 g h', upper=True)
@@ -34,16 +35,24 @@ for f in foo:
 s=statics('void log(const std::string& msg); std::list<logger> get_loggers() const')
 bar_comments=create_comments(bar)
 
+print ('-------------------------------struct-------------------------------------')
+st=flags('flags', 'a b c d e')
+print (st)
+
 print ('-------------------------------class-------------------------------------')
-c=class_(template_types='U V T', parents='par1, par2', name='example', 
+class_name='example'
+c=class_(template_types='U V T', parents='par1, par2', name=class_name, 
         public_methods=bar, protected_methods=s, 
         private_fields='int a;static std::string name;View<int> v;Sing<U, T> sss;',
         protected_fields='char x;std::vector<std::string> s;', 
         set=['private', 'protected'], get=['private', 'protected'])
+c.parents[1].type='private'
 c.basic_class_content(dd=0, dc=1, dm=2, vd=3)
 c.comment_methods()
-
+print(header(class_name, 'tester', 'test@test.com'))
+print(includes(None, c.autodetect(), None))
 print(c.decl())
+
 impl=c.impl()
 
 print ('-----------------------------static impl----------------------------------')
@@ -52,3 +61,4 @@ print ('-----------------------------cpp impl----------------------------------'
 print(impl[1])
 print ('-----------------------------cpp template impl----------------------------------')
 print(impl[2])
+

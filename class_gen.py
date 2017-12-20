@@ -7,8 +7,6 @@ from decor import to_snake, to_camel
 from functions import arg, method, create_comments
 from header_detection import subtypes_autodetection
 
-pre_field_modifiers    = ['static', 'const', 'mutable']
-pre_var_modifiers      = ['static', 'const', 'extern']
 not_cpp_post_mod       = ['=delete', '=0', '=default']
 post_class_modifiers   = ['final', ]
 
@@ -320,6 +318,20 @@ class class_:
             cpp=spp+cpp
             spp=''
         return (spp, cpp, cppt)
+    
+    def autodetect (self):
+        types=[]
+        f=self.private_fields + self.protected_fields
+        for v in f:
+            types.append(v.type)
+        m=self.private_methods + self.protected_methods + self.public_methods
+        autodetected=[]
+        for v in m:
+        	autodetected.extend(v.autodetected)
+        autodetected.extend(subtypes_autodetection(types))
+        headers = [el for el, _ in groupby(sorted(autodetected))]
+        return headers
+
 
 def virtuals(line):
     l=funcs(line)
@@ -332,45 +344,6 @@ def consts(line):
     for func in l:
         func.pre_modifier='const'
     return l
-
-def combine_class(private_vars=None, protected_vars=None, public_methods=None, protected_methods=None, private_methods=None):
-    class_fields=[]
-    if isinstance(private_vars, list):
-        class_fields.extend(private_vars)
-    if isinstance(protected_vars, list):
-        class_fields.extend(protected_vars)
-    
-    class_methods=[]
-    if isinstance(private_methods, list):
-        class_methods.extend(private_methods)
-    if isinstance(protected_methods, list):
-        class_methods.extend(protected_methods)
-    if isinstance(public_methods, list):
-        class_methods.extend(public_methods)
-    return {'fields': class_fields, 'methods': class_methods}
-
-def create_class(class_name,template_types=None, class_parents=None,
-                 private_vars=None,protected_vars=None, deps_includes=None,
-                 private_setters=False, private_getters=False, protected_setters=False, protected_getters=False,
-                 public_methods=None,protected_methods=None,private_methods=None,
-                 tabstop=4,snake_case=True):
-    cc=combine_class(private_vars, protected_vars, public_methods, protected_methods, private_methods)
-    autodetected=[]
-    if cc['fields']:
-        for v in cc['fields']:
-            autodetected.extend(subtypes_autodetection(v, deps_includes))
-    if cc['methods']:
-        for v in cc['methods']:
-            autodetected.extend(subtypes_autodetection(v, deps_includes))
-    sgetters=add_sg(private_vars, private_setters, private_getters)
-    sgetters.extend(add_sg(protected_vars, protected_setters, protected_getters))
-    pub=[]
-    if isinstance(public_methods, list):
-        pub.extend(public_methods)
-    if isinstance(sgetters, list):
-        pub.extend(sgetters)
-    headers = [el for el, _ in groupby(sorted(autodetected))]
-    return (headers, ret, cpp+cpp1+cpp2, cppt+cppt1+cppt2)
 
 # TODO: Change maintainer to somebody from developers
 # TODO: Add simple variable checking to method body
