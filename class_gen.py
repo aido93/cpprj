@@ -227,6 +227,8 @@ class class_:
 
     def decl(self, ts=' '*4):
         ret=''
+        if self.pre_class and isinstance(self.pre_class, str):
+            ret+=self.pre_class
         if self.template_types:
             ret+='template <class '+', class '.join(self.template_types)+'>\n'
         ret+="class "+self.name
@@ -283,6 +285,8 @@ class class_:
             for p in self.private_fields:
                 ret+=(str(p)+';'+' '*(max_len-len(str(p))+1)+'//!< \n'+ts*2)
         ret+='\n};\n'
+        if self.post_class_hpp and isinstance(self.post_class_hpp, str):
+            ret+=self.post_class_hpp
         return ret
     
     def impl(self, ts=' '*4):
@@ -325,7 +329,7 @@ class class_:
         else:
             cpp=spp+cpp
             spp=''
-        return (spp, cpp, cppt)
+        return (spp, cpp+self.post_class_cpp, cppt)
     
     def autodetect (self):
         types=[]
@@ -341,8 +345,7 @@ class class_:
         return headers
     
     def save(self, namespace, directory, user, email):
-        b=self.pre_class+'\n'
-        b+=self.decl()
+        b=self.decl()
         impl=self.impl()
         if self.template_types:
             b+=('\n#include "'+self.name+'_impl.hpp"')
@@ -351,13 +354,12 @@ class class_:
         a=namespace(namespace, b)
         a=includes(None, c.autodetect(), None)+a
         a=header(self.name, user, email)+a
-        a+=self.post_class_hpp
         f = open(os.path.join(directory, 'include', self.name+'.hpp'), 'w')
         f.write(a)
         f.close()
         if not self.template_types:
             f = open(os.path.join(directory, 'src', self.name+'.cpp'), 'w')
-            f.write(a)
+            f.write(impl[0]+impl[1])
             f.close()
         else:
             f = open(os.path.join(directory, 'include', self.name+'_impl.hpp'), 'w')

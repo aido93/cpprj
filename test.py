@@ -22,9 +22,9 @@ b+=flags('flags', 'a b c d e')+'\n'
 b+=c.decl()
 impl=c.impl()
 if c.template_types:
-	b+=('\n#include "'+class_name+'_impl.hpp"')
+    b+=('\n#include "'+class_name+'_impl.hpp"')
 elif impl[2]:
-	b+=('\n'+impl[2])
+    b+=('\n'+impl[2])
 a=namespace('my_namespace', b)
 a=includes(None, c.autodetect(), None)+a
 a=header(class_name, 'tester', 'test@test.com')+a
@@ -33,12 +33,12 @@ comment_print(25, c.name+'.hpp')
 print(a)
 
 if c.template_types:
-	comment_print(25, c.name+'_impl.hpp')
-	im=impl[2]
+    comment_print(25, c.name+'_impl.hpp')
+    im=impl[2]
 else:
-	comment_print(25, c.name+'.cpp')
-	im='#include "'+class_name+'.hpp"\n\n'
-	im+=impl[0]
-	im+=impl[1]
+    comment_print(25, c.name+'.cpp')
+    im='#include "'+class_name+'.hpp"\n\n'
+    im+=impl[0]
+    im+=impl[1]
 
 print(im)
