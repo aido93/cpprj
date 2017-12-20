@@ -10,7 +10,7 @@ def comment_print(n, text):
 class_name='example'
 foo=funcs("int main(void);void main(void);int main(int argc, char**argv);char* memset(void* begin, uint32_t count, char symbol);")
 bar=funcs("std::vector<uint32_t> get_all<T>(const T&); static std::map<uint32_t,std::vector<int>> get_list(const std::string&str);")
-c=class_(template_types='', parents='par1, par2', name=class_name, 
+c=class_(template_types=None, parents='par1, par2', name=class_name, 
         public_methods=foo, protected_methods=bar, 
         private_fields='int a;static std::string name;View<int> v;Sing<U, T> sss;',
         protected_fields='char x;std::vector<std::string> s;', 
@@ -22,6 +22,7 @@ e0=enum('my_enum4', '   o p u k l ',  upper=False, is_class=False)
 b=e0+'\n'
 b+=flags('flags', 'a b c d e')+'\n'
 b+=c.decl()
+impl=c.impl()
 if c.template_types:
 	b+=('\n#include "'+class_name+'_impl.hpp"')
 elif impl[2]:
@@ -29,7 +30,6 @@ elif impl[2]:
 a=namespace('my_namespace', b)
 a=includes(None, c.autodetect(), None)+a
 a=header(class_name, 'tester', 'test@test.com')+a
-impl=c.impl()
 
 comment_print(25, class_name+'.hpp')
 print(a)
@@ -39,7 +39,8 @@ if c.template_types:
 	im=impl[2]
 else:
 	comment_print(25, class_name+'.cpp')
-	im=impl[0]
+	im='#include "'+class_name+'.hpp"\n\n'
+	im+=impl[0]
 	im+=impl[1]
 
 print(im)
