@@ -36,6 +36,7 @@ class method:
     post_modifier=None
     body=None
     hint=''
+    logger=True
     autodetected=[]
     
     def __init__(self, **kwargs):
@@ -136,6 +137,8 @@ class method:
                 ret+='\n'
         ret+='\n{\n'+ts
         nulls=['int', 'unsigned int', 'uint32_t', 'int32_t', 'long', 'unsigned long', 'ulong']
+        if self.logger==True:
+            ret+='logger->debug("{0}: {1} [thread %t] - Enter in function {2}", __FILE__, __LINE__, __FUNCTION__);'
         if self.body:
             ret+=self.body
         elif self.return_type and self.return_type!='void' and self.hint!='move' and self.hint!='copy':

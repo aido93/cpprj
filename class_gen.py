@@ -64,7 +64,9 @@ def add_sg(var, setters, getters, snake_case):
                  if t.find('static ')!=-1:
                      t=t.replace('static ','')
                      pm='static'
-            if t in generic_types:
+            if t in generic_types or '*':
+                args=[arg(type=t, name='_'+v.name), ]
+            elif '*' in t:
                 args=[arg(type=t, name='_'+v.name), ]
             else:
                 args=[arg(pre_modifier="const ", type=t+'&', name='_'+v.name), ]
@@ -99,6 +101,7 @@ class class_:
     set                = []
     get                = []
     snake_case         = True
+    gen_test           = True
     pre_class          = ''
     post_class_hpp     = ''
     post_class_cpp     = ''
@@ -344,7 +347,7 @@ class class_:
         headers = [el for el, _ in groupby(sorted(autodetected))]
         return headers
     
-    def save(self, namespace, directory, user, email):
+    def save(self, namespace, directory, user, email, tester_name=None, tester_email=None):
         b=self.decl()
         impl=self.impl()
         if self.template_types:
@@ -360,6 +363,45 @@ class class_:
         if not self.template_types:
             f = open(os.path.join(directory, 'src', self.name+'.cpp'), 'w')
             f.write(impl[0]+impl[1])
+            f.close()
+        if self.test==True:
+            ts=' '*4
+            f = open(os.path.join(directory, 'test', self.name+'.cpp'), 'w')
+            tester='#include "'+self.name+'.hpp'+'"\n'
+            tester+='#include <iostream>\n\n'
+            tester+='using namespace std;\n\n'
+            tester+='int main(int argc, char** argv)\n{\n'+ts
+            constructors=[c for c in self.public_methods if c.name==self.name]
+            i=1
+            # Test all constructors
+            dyns=[]
+            for c in constructors:
+                if c.post_modifier!='=delete':
+                    tester+=c.name+' test'+str(i)
+                    if c.args and c.args.type!=self.name+"&" and c.args.type!=self.name+"&&":
+                        tester+=('('+str(c.args)+')')
+                        dyns.append(c.args)
+                    tester+=(';\n'+ts)
+                    i=i+1
+            i=1
+            for d in dyns:
+                tester+=self.name+'* dyn_test'+str(i)+' = new '+self.name
+                if d and d.type!=self.name+"&" and d.type!=self.name+"&&":
+                    tester+=('('+str(d)+')')
+                tester+=(';\n'+ts)
+                i=i+1
+            tester+='\n'+ts
+            i=1
+            for d in dyns:
+                tester+='delete dyn_test'+str(i)
+                tester+=(';\n'+ts)
+                i=i+1
+            
+            tester+='\nreturn 0;\n}\n'
+            if not tester_name:
+                f.write(header(self.name, user, email)+tester)
+            else:
+                f.write(header(self.name, tester_name, tester_email)+tester)
             f.close()
         else:
             f = open(os.path.join(directory, 'include', self.name+'_impl.hpp'), 'w')
