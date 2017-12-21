@@ -9,14 +9,14 @@ config={}
 with open(sys.argv[1], 'r') as fr:
     config=json.load(fr)
 
+cpprj_conf='/etc/cpprj/'
 os.makedirs(config['dir'], exist_ok=False)
-os.copyfile(join('lic',config['lic']), join(config['dir'], 'LICENSE'))
-os.makedirs(join(config['dir'], 'include'), exist_ok=False)
-os.makedirs(join(config['dir'], 'src'), exist_ok=False)
-deps_path=join(config['dir'], '..', 'deps', 'src')
-os.makedirs(deps_path, exist_ok=False)
+os.chdir(config['dir'])
+os.copyfile(join(cpprj_conf,'lic',config['lic']), 'LICENSE')
+os.makedirs('include', exist_ok=False)
+os.makedirs('src', exist_ok=False)
 if config['test_dir']!='':
-    os.makedirs(join(config['dir'], config['test_dir']), exist_ok=False)
+    os.makedirs(config['test_dir'], exist_ok=False)
 
 readme='#'+split(config['dir'])[-1]+' '+config['version']+'\n\n'+config['desc']+'\n'
 readme+='## Dependencies:'
@@ -27,8 +27,12 @@ for d in config['dependencies']:
         readme+='['+name[-1]+']('+a+')'
 readme+='Please contact us:\n*'+config['maintainer_url']+'\n*'+config['maintainer_email']
 with open('README.md', 'w') as fw:
+    fw.write(readme)
 
+deps_path=join(config['dir'], '..', 'deps', 'src')
+os.makedirs(deps_path, exist_ok=True)
 os.chdir(deps_path)
+
 archives=[]
 dirs={}
 aa=[]
