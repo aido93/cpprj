@@ -11,6 +11,8 @@ doxygen
 
 dot (for diagrams in Doxygen)
 
+python-magic
+
 **Install**
 
 git clone https://github.com/aido93/cpprj
@@ -20,3 +22,5 @@ cd cpprj && python3 ./test.py
 How to use:
 
 Just run `python3 ./test.py` and see result
+
+
