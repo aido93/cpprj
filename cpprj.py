@@ -88,6 +88,34 @@ __import__(codegen+'.make_arch')
 
 make_arch(tabstop=config['tabstop'], snake_case=config['snake_case'], type=config['type'])
 
+# Other builds must be done in Jenkins
+print('Building for linux... Other builds must be done in Jenkins')
+def test_build():
+    ps = subprocess.Popen(('qmake', '..'), stdout=subprocess.PIPE)
+    ps.wait()
+    output = ps.stdout.read()
+    print(output+'\n')
+    if ps.exit_code!=0:
+        os._exit(1)
+    ps = subprocess.Popen(('make'), stdout=subprocess.PIPE)
+    ps.wait()
+    output = ps.stdout.read()
+    print(output+'\n')
+    if ps.exit_code!=0:
+        os._exit(1)
+    for p in os.listdir('tests'):
+        ps = subprocess.Popen(('tests/'+p, ), stdout=subprocess.PIPE)
+        ps.wait()
+        if ps.exit_code!=0:
+            print('Test '+p+' is not passed. Exit')
+            os._exit(1)
+
+os.makedirs('build')
+os.chdir('build')
+test_build()
+os.chdir('..')
+os.rmdir('build')
+
 if config['git_repo']:
     ps = subprocess.Popen(('git', 'init', '.'), stdout=subprocess.PIPE)
     ps.wait()
