@@ -2,12 +2,15 @@ import json
 import os
 import sys
 import magic
-from os.path import join, split
+from os.path import join, split, splitext
 import subprocess
 
 config={}
-with open(sys.argv[1], 'r') as fr:
+conf=sys.argv[1]
+with open(conf, 'r') as fr:
     config=json.load(fr)
+
+codegen=join(splitext(conf)[:-1])
 
 cpprj_conf='/etc/cpprj/'
 os.makedirs(config['dir'], exist_ok=False)
@@ -15,8 +18,10 @@ os.chdir(config['dir'])
 os.copyfile(join(cpprj_conf,'lic',config['lic']), 'LICENSE')
 os.makedirs('include', exist_ok=False)
 os.makedirs('src', exist_ok=False)
-if config['test_dir']!='':
-    os.makedirs(config['test_dir'], exist_ok=False)
+if config['team']['designers']:
+    os.makedirs('ui', exist_ok=False)
+if config['team']['testers']!='':
+    os.makedirs('tests', exist_ok=False)
 
 readme='#'+split(config['dir'])[-1]+' '+config['version']+'\n\n'+config['desc']+'\n'
 readme+='## Dependencies:'
@@ -53,7 +58,7 @@ for d in config['dependencies']:
         bb=aa
         aa=os.listdir('.')
         dirs[list(set(aa)-set(bb))[0]]=a['build']
-print('All dependencies are loaded\n')
+print('All dependencies has loaded\n')
 
 for a in archives:
     t=magic.from_file(a, mime=True).split('/')[-1]
@@ -63,7 +68,7 @@ for a in archives:
         output = ps.stdout.read()
         print(output+'\n')
         os.remove(a)
-print('All dependencies are unpacked\n')
+print('All dependencies has unpacked\n')
 
 os.chdir('..')
 os.makedirs('include', exist_ok=False)
@@ -76,3 +81,39 @@ for d, build in dirs.items():
     output = ps.stdout.read()
     print(output+'\n')
     os.chdir('..')
+os.chdir('..')
+print('All dependencies has built')
+
+__import__(codegen+'.make_arch')
+
+make_arch(tabstop=config['tabstop'], snake_case=config['snake_case'], type=config['type'])
+
+if config['git_repo']:
+    ps = subprocess.Popen(('git', 'init', '.'), stdout=subprocess.PIPE)
+    ps.wait()
+    output = ps.stdout.read()
+    print(output+'\n')
+    ps = subprocess.Popen(('git', 'add', '.'), stdout=subprocess.PIPE)
+    ps.wait()
+    output = ps.stdout.read()
+    print(output+'\n')
+    ps = subprocess.Popen(('git', 'remote', 'add', 'origin', config['git_repo']), stdout=subprocess.PIPE)
+    ps.wait()
+    output = ps.stdout.read()
+    print(output+'\n')
+    ps = subprocess.Popen(('git', 'config', '--local', 'user.name', '"'+config['team']['manager']['name']+'"'), stdout=subprocess.PIPE)
+    ps.wait()
+    output = ps.stdout.read()
+    print(output+'\n')
+    ps = subprocess.Popen(('git', 'config', '--local', 'user.email', config['team']['manager']['email']), stdout=subprocess.PIPE)
+    ps.wait()
+    output = ps.stdout.read()
+    print(output+'\n')
+    ps = subprocess.Popen(('git', 'commit', '-m', '"Initial commit"'), stdout=subprocess.PIPE)
+    ps.wait()
+    output = ps.stdout.read()
+    print(output+'\n')
+    ps = subprocess.Popen(('git', 'push', 'origin', 'master'), stdout=subprocess.PIPE)
+    ps.wait()
+    output = ps.stdout.read()
+    print(output+'\n')

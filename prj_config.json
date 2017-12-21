@@ -1,6 +1,6 @@
 {
     "desc"             : "",
-    "version"          : "1.0.0-0",
+    "version"          : "1.0",
     "maintainer"       : "",
     "maintainer_url"   : "",
     "maintainer_email" : "",
@@ -46,9 +46,8 @@
 
     "type"           : "lib",
     "tabstop"        : 4,
-    "git_repo"       : "",
-    "test_dir"       : "tests",
     "snake_case"     : true,
+    "git_repo"       : "",
 
     "builds"         :
     {
