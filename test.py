@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from class_gen import class_, consts, virtuals, parent
 from functions import method, funcs, statics, create_comments
 from enums import enum, switch, get_all_enums
