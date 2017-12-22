@@ -9,7 +9,8 @@ from os.path import join, split
 def make_arch(directory, developers, tabstop, snake_case, type):
     class_name='test_class'
     bar=funcs("void hello()")
-    bar[0].body='std::cout<<"Hello! My name is"<<name<<std::endl;'
+    ts=' '*tabstop
+    bar[0].body='\n'+ts+'std::cout<<"Hello! My name is"<<name<<std::endl;'
     c=class_(name=class_name, 
             public_methods=bar, 
             private_fields='const std::string name;',
@@ -26,7 +27,7 @@ def make_arch(directory, developers, tabstop, snake_case, type):
     ns='my_example'
     c.save(ns, directory, developers[0]['name'], developers[0]['email'])
     global_funcs=funcs("int main(int argc, char**argv);")
-    global_funcs[0].body=ns+'::'+class_name+' test("Dummy");'
+    global_funcs[0].body='\n'+ts+ns+'::'+class_name+' test("Dummy");'
     ret=global_funcs[0].impl()
     ret='#include "spdlog/spdlog.h"\n#include "'+class_name+'.hpp"\nauto logger = spdlog::stdout_color_mt("logger");\n\n'+ret
     with open(join(directory, 'src', 'main.cpp'), 'w') as f:

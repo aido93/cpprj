@@ -130,6 +130,7 @@ def test_build():
     print(output.decode('utf8')+'\n')
     if ps.returncode!=0:
         os._exit(1)
+    print(os.getcwd())
     for p in os.listdir('tests'):
         ps = subprocess.Popen(('tests/'+p, ), stdout=subprocess.PIPE)
         ps.wait()
