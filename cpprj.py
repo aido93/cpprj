@@ -14,7 +14,8 @@ with open(conf, 'r') as fr:
 codegen=join(splitext(conf)[:-1])
 project_name=split(codegen)[-1]
 
-cpprj_conf='/etc/cpprj/'
+#cpprj_conf='/etc/cpprj/'
+cpprj_conf='.'
 os.makedirs(config['dir'], exist_ok=False)
 os.chdir(config['dir'])
 os.copyfile(join(cpprj_conf,'lic',config['lic']), 'LICENSE')
