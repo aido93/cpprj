@@ -4,7 +4,7 @@ import os
 import re
 import json
 from itertools import groupby
-from decor import to_snake, to_camel
+from decor import to_snake, to_camel, namespace, header, includes
 from functions import arg, method, create_comments
 from header_detection import subtypes_autodetection
 
@@ -348,15 +348,15 @@ class class_:
         headers = [el for el, _ in groupby(sorted(autodetected))]
         return headers
     
-    def save(self, namespace, directory, user, email, tester_name=None, tester_email=None):
+    def save(self, ns, directory, user, email, tester_name=None, tester_email=None):
         b=self.decl()
         impl=self.impl()
         if self.template_types:
             b+=('\n#include "'+self.name+'_impl.hpp"')
         elif impl[2]:
             b+=('\n'+impl[2])
-        a=namespace(namespace, b)
-        a=includes(None, c.autodetect(), None)+a
+        a=namespace(ns, b)
+        a=includes(None, self.autodetect(), None)+a
         a=header(self.name, user, email)+a
         f = open(os.path.join(directory, 'include', self.name+'.hpp'), 'w')
         f.write(a)
@@ -367,7 +367,7 @@ class class_:
             f.close()
         if self.test==True:
             ts=' '*4
-            f = open(os.path.join(directory, 'test', self.name+'.cpp'), 'w')
+            f = open(os.path.join(directory, 'tests', self.name+'.cpp'), 'w')
             tester='#include "'+self.name+'.hpp'+'"\n'
             tester+='#include <iostream>\n\n'
             tester+='using namespace std;\n\n'

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 from class_gen import class_, consts, virtuals, parent
-from functions import method, funcs, statics, create_comments
+from functions import arg, method, funcs, statics, create_comments
 from enums import enum, switch, get_all_enums
 from structs import struct, flags
 from decor import header, includes, namespace, comment_print
+from os.path import join, split
 
 def make_arch(directory, developers, tabstop, snake_case, type):
     class_name='test_class'
@@ -23,7 +24,7 @@ def make_arch(directory, developers, tabstop, snake_case, type):
     b+=c.decl()
     impl=c.impl()
     c.pre_class=b
-    c.save('my_example', directory, developers[0]['user'], developers[0]['email'])
+    c.save('my_example', directory, developers[0]['name'], developers[0]['email'])
     global_funcs=funcs("int main(int argc, char**argv);")
     global_funcs[0].body=class_name+' test("Dummy");'
     ret=global_funcs[0].impl()

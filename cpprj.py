@@ -6,6 +6,7 @@ import magic
 import shutil
 from os.path import join, split, splitext, expanduser
 import subprocess
+from importlib import import_module
 
 config={}
 conf=sys.argv[1]
@@ -38,7 +39,7 @@ def form_qt_config(name, type):
     text+='INCLUDE_PATH += $$PWD/../deps/include\n'
     text+='LIBRARY_PATH += $$PWD/../deps/lib\n'
     with open(name+'.pro', 'w') as f:
-        f.write(test)
+        f.write(text)
 
 readme='#'+split(config['dir'])[-1]+' '+config['version']+'\n\n'+config['desc']+'\n'
 readme+='## Dependencies:\n'
@@ -103,9 +104,9 @@ for d, build in dirs.items():
 os.chdir('..')
 print('All dependencies has built')
 
-__import__(codegen+'.make_arch')
 form_qt_config(project_name, config['type'])
-make_arch(tabstop=config['tabstop'], snake_case=config['snake_case'], type=config['type'])
+prj_module=import_module(split(codegen)[-1], '.projects')
+prj_module.make_arch(directory=d1, developers=config['team']['developers'], tabstop=config['tabstop'], snake_case=config['snake_case'], type=config['type'])
 # Other builds must be done in Jenkins
 print('Building for linux... Other builds must be done in Jenkins')
 def test_build():
