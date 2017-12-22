@@ -4,7 +4,7 @@ import os
 import re
 import json
 from itertools import groupby
-from decor import to_snake, to_camel
+from decor import to_snake, to_camel, namespace, header, includes
 from functions import arg, method, create_comments
 from header_detection import subtypes_autodetection
 
@@ -348,26 +348,31 @@ class class_:
         headers = [el for el, _ in groupby(sorted(autodetected))]
         return headers
     
-    def save(self, namespace, directory, user, email, tester_name=None, tester_email=None):
+    def save(self, ns, directory, user, email, tester_name=None, tester_email=None):
         b=self.decl()
+
         impl=self.impl()
         if self.template_types:
             b+=('\n#include "'+self.name+'_impl.hpp"')
         elif impl[2]:
             b+=('\n'+impl[2])
-        a=namespace(namespace, b)
-        a=includes(None, c.autodetect(), None)+a
+        a=namespace(ns, b)
+        a=includes(None, self.autodetect(), None)+a
         a=header(self.name, user, email)+a
         f = open(os.path.join(directory, 'include', self.name+'.hpp'), 'w')
         f.write(a)
         f.close()
         if not self.template_types:
             f = open(os.path.join(directory, 'src', self.name+'.cpp'), 'w')
-            f.write(impl[0]+impl[1])
+            prefix='#include "'+self.name+'.hpp"\n#include "spdlog/spdlog.h"\n#include <memory>\nusing namespace '+ns+';\n'
+            prefix+='#include <iostream>\n'
+            prefix+='using namespace std;\n'
+            prefix+='extern std::shared_ptr<spdlog::logger> logger;\n'
+            f.write(prefix+impl[0]+impl[1])
             f.close()
         if self.test==True:
             ts=' '*4
-            f = open(os.path.join(directory, 'test', self.name+'.cpp'), 'w')
+            f = open(os.path.join(directory, 'tests', self.name+'.cpp'), 'w')
             tester='#include "'+self.name+'.hpp'+'"\n'
             tester+='#include <iostream>\n\n'
             tester+='using namespace std;\n\n'
@@ -379,7 +384,7 @@ class class_:
             for c in constructors:
                 if c.post_modifier!='=delete':
                     tester+=c.name+' test'+str(i)
-                    if c.args and c.args.type!=self.name+"&" and c.args.type!=self.name+"&&":
+                    if c.args and c.args[0].type!=self.name+"&" and c.args[0].type!=self.name+"&&":
                         tester+=('('+str(c.args)+')')
                         dyns.append(c.args)
                     tester+=(';\n'+ts)
@@ -387,7 +392,7 @@ class class_:
             i=1
             for d in dyns:
                 tester+=self.name+'* dyn_test'+str(i)+' = new '+self.name
-                if d and d.type!=self.name+"&" and d.type!=self.name+"&&":
+                if d and d[0].type!=self.name+"&" and d[0].type!=self.name+"&&":
                     tester+=('('+str(d)+')')
                 tester+=(';\n'+ts)
                 i=i+1

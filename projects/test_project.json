@@ -1,0 +1,124 @@
+{
+    "desc"             : "First application",
+    "version"          : "1.0",
+    "maintainer"       : "company",
+    "maintainer_url"   : "company.ru",
+    "maintainer_email" : "support@company.ru",
+    "dir"              : "~/test_project",
+    "lic"              : "bsd3",
+    "team"             : 
+        {
+            "manager"     : 
+                {
+                    "name"  : "user1",
+                    "email" : "user1@company.com"
+                },
+            "developers"  : [
+                {
+                    "name"  : "user2",
+                    "email" : "user2@company.com"
+                }
+            ],
+            "testers"     : [
+                {
+                    "name"  : "user3",
+                    "email" : "user@company.com"
+                }
+            ],
+            "designers"   : []
+        },
+
+    "dependencies"   :  {
+                            "git":  [	
+										{
+											"url" : "https://github.com/gabime/spdlog",
+											"build": "cp -a include/spdlog ../../include/"
+										}
+									],
+                            "svn":  [],
+                            "wget": []
+                        },
+
+    "type"           : "cli",
+    "tabstop"        : 4,
+    "snake_case"     : true,
+    "git_repo"       : "",
+
+    "builds"         :
+    {
+        "common":
+        {
+            "cxx"           : "g++",
+            "cc"            : "gcc",
+            "cxx_flags"     : "-O2 -Wall -pedantic -std=c++14",
+            "inc_dirs"      : "include"
+        },
+        "qmake"          :
+        {
+            "linux32.static" : "qmake",
+            "linux32.shared" : "qmake",
+            "linux64.static" : "qmake",
+            "linux64.shared" : "qmake",
+            "win32.static"   : "qmake",
+            "win32.shared"   : "qmake",
+            "win64.static"   : "qmake",
+            "win64.shared"   : "qmake"
+        },
+        "linux32.static" : {
+            "cross_compile" : "",
+            "arch"          : "i686",
+            "linker_flags"  : "-static",
+            "lib_dirs"      : "",
+            "out_dir"       : ""
+        },
+        "linux32.shared" : {
+            "cross_compile" : "",
+            "arch"          : "i686",
+            "linker_flags"  : "-static-libgcc -static-libstdc++",
+            "lib_dirs"      : "",
+            "out_dir"       : ""
+        },
+        "linux64.static" : {
+            "cross_compile" : "x86_64-linux-gnu-",
+            "arch"          : "x86_64",
+            "linker_flags"  : "-static",
+            "lib_dirs"      : "",
+            "out_dir"       : ""
+        },
+        "linux64.shared" : {
+            "cross_compile" : "x86_64-linux-gnu-",
+            "arch"          : "x86_64",
+            "linker_flags"  : "-static-libgcc -static-libstdc++",
+            "lib_dirs"      : "",
+            "out_dir"       : ""
+        },
+        "win32.static" : {
+            "cross_compile" : "i686-w64-mingw32-",
+            "arch"          : "i686",
+            "linker_flags"  : "-static",
+            "lib_dirs"      : "",
+            "out_dir"       : ""
+        },
+        "win32.shared" : {
+            "cross_compile" : "i686-w64-mingw32-",
+            "arch"          : "i686",
+            "linker_flags"  : "-static-libgcc -static-libstdc++",
+            "lib_dirs"      : "",
+            "out_dir"       : ""
+        },
+        "win64.static" : {
+            "cross_compile" : "x86_64-w64-mingw32-",
+            "arch"          : "x86_64",
+            "linker_flags"  : "-static",
+            "lib_dirs"      : "",
+            "out_dir"       : ""
+        },
+        "win64.shared" : {
+            "cross_compile" : "x86_64-w64-mingw32-",
+            "arch"          : "x86_64",
+            "linker_flags"  : "-static-libgcc -static-libstdc++",
+            "lib_dirs"      : "",
+            "out_dir"       : ""
+        }
+    }
+}
