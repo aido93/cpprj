@@ -350,6 +350,7 @@ class class_:
     
     def save(self, ns, directory, user, email, tester_name=None, tester_email=None):
         b=self.decl()
+
         impl=self.impl()
         if self.template_types:
             b+=('\n#include "'+self.name+'_impl.hpp"')
@@ -379,7 +380,7 @@ class class_:
             for c in constructors:
                 if c.post_modifier!='=delete':
                     tester+=c.name+' test'+str(i)
-                    if c.args and c.args.type!=self.name+"&" and c.args.type!=self.name+"&&":
+                    if c.args and c.args[0].type!=self.name+"&" and c.args[0].type!=self.name+"&&":
                         tester+=('('+str(c.args)+')')
                         dyns.append(c.args)
                     tester+=(';\n'+ts)
@@ -387,7 +388,7 @@ class class_:
             i=1
             for d in dyns:
                 tester+=self.name+'* dyn_test'+str(i)+' = new '+self.name
-                if d and d.type!=self.name+"&" and d.type!=self.name+"&&":
+                if d and d[0].type!=self.name+"&" and d[0].type!=self.name+"&&":
                     tester+=('('+str(d)+')')
                 tester+=(';\n'+ts)
                 i=i+1

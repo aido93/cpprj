@@ -130,7 +130,7 @@ class method:
                 ret+=' : \n'+ts*2
                 i=1
                 for key, value in initer.items():
-                    ret+=key+'('+value+')'
+                    ret+=key.name+'('+value.name+')'
                     if i<len(initer):
                         ret+=',\n'+ts*2
                     i=i+1

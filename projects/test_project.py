@@ -13,20 +13,21 @@ def make_arch(directory, developers, tabstop, snake_case, type):
     c=class_(name=class_name, 
             public_methods=bar, 
             private_fields='const std::string name;',
-            get=['private'], constructors=[arg(name='_name', pre_modifier='const', type='std::string&'), ],
+            get=['private'], 
             test=True)
-    c.basic_class_content(dd=0, dc=1, dm=1, vd=1)
+    c.basic_class_content(dd=0, dc=1, dm=1, vd=1, custom=[[arg(name='_name', pre_modifier='const', type='std::string&'), ], ])
     c.comment_methods()
     # Pre-code definitions
     e0=enum('my_enum4', '   o p u k l ',  upper=False, is_class=False)
     b=e0+'\n'
     b+=flags('flags', 'a b c d e')+'\n'
-    b+=c.decl()
     impl=c.impl()
     c.pre_class=b
-    c.save('my_example', directory, developers[0]['name'], developers[0]['email'])
+    ns='my_example'
+    c.save(ns, directory, developers[0]['name'], developers[0]['email'])
     global_funcs=funcs("int main(int argc, char**argv);")
-    global_funcs[0].body=class_name+' test("Dummy");'
+    global_funcs[0].body=ns+'::'+class_name+' test("Dummy");'
     ret=global_funcs[0].impl()
+    ret='#include "spdlog/spdlog.h"\n#include "'+class_name+'.hpp"\nauto logger = spdlog::stdout_color_mt("logger");\n\n'+ret
     with open(join(directory, 'src', 'main.cpp'), 'w') as f:
         f.write(ret)

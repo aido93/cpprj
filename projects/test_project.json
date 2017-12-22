@@ -32,7 +32,7 @@
                             "git":  [	
 										{
 											"url" : "https://github.com/gabime/spdlog",
-											"build": "cp -a include/spdlog ../include"
+											"build": "cp -a include/spdlog ../../include/"
 										}
 									],
                             "svn":  [],
