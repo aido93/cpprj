@@ -1,36 +1,31 @@
 {
-    "desc"             : "",
+    "desc"             : "First application",
     "version"          : "1.0",
-    "maintainer"       : "",
-    "maintainer_url"   : "",
-    "maintainer_email" : "",
-    "dir"              : "",
-    "lic"              : "mit",
+    "maintainer"       : "company",
+    "maintainer_url"   : "company.ru",
+    "maintainer_email" : "support@company.ru",
+    "dir"              : "~/test_project",
+    "lic"              : "bsd3",
     "team"             : 
         {
             "manager"     : 
                 {
-                    "name"  : "",
-                    "email" : ""
+                    "name"  : "user1",
+                    "email" : "user1@company.com"
                 },
             "developers"  : [
                 {
-                    "name"  : "",
-                    "email" : ""
+                    "name"  : "user2",
+                    "email" : "user2@company.com"
                 }
             ],
             "testers"     : [
                 {
-                    "name"  : "",
-                    "email" : ""
+                    "name"  : "user3",
+                    "email" : "user@company.com"
                 }
             ],
-            "designers"   : [
-                {
-                    "name"  : "",
-                    "email" : ""
-                }
-            ]
+            "designers"   : []
         },
 
     "dependencies"   :  {
@@ -44,7 +39,7 @@
                             "wget": []
                         },
 
-    "type"           : "lib",
+    "type"           : "cli",
     "tabstop"        : 4,
     "snake_case"     : true,
     "git_repo"       : "",
