@@ -27,7 +27,8 @@ def make_arch(directory, developers, tabstop, snake_case, type):
     ns='my_example'
     c.save(ns, directory, developers[0]['name'], developers[0]['email'])
     global_funcs=funcs("int main(int argc, char**argv);")
-    global_funcs[0].body='\n'+ts+ns+'::'+class_name+' test("Dummy");'
+    global_funcs[0].body='\n'+ts+'spdlog::set_level(spdlog::level::debug);'
+    global_funcs[0].body+='\n'+ts+ns+'::'+class_name+' test("Dummy");\n'+ts+'test.hello();'
     ret=global_funcs[0].impl()
     ret='#include "spdlog/spdlog.h"\n#include "'+class_name+'.hpp"\nauto logger = spdlog::stdout_color_mt("logger");\n\n'+ret
     with open(join(directory, 'src', 'main.cpp'), 'w') as f:
