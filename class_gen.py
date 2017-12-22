@@ -364,7 +364,11 @@ class class_:
         f.close()
         if not self.template_types:
             f = open(os.path.join(directory, 'src', self.name+'.cpp'), 'w')
-            f.write(impl[0]+impl[1])
+            prefix='#include "'+self.name+'.hpp"\n#include "spdlog/spdlog.h"\n#include <memory>\nusing namespace '+ns+';\n'
+            prefix+='#include <iostream>\n'
+            prefix+='using namespace std;\n'
+            prefix+='extern std::shared_ptr<spdlog::logger> logger;\n'
+            f.write(prefix+impl[0]+impl[1])
             f.close()
         if self.test==True:
             ts=' '*4
