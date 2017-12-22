@@ -32,11 +32,18 @@ if config['team']['testers']!='':
     os.makedirs('tests', exist_ok=False)
 
 def form_qt_config(name, type):
-    text ='CONFIG += '+type+'\n'
-    text+='PROJECT '+name+'\n'
-    text+='SOURCES = src/*.cpp\n'
-    text+='INCLUDE_PATH += include\n'
-    text+='INCLUDE_PATH += $$PWD/../deps/include\n'
+    text='CONFIG += c++14 warn_on\n'
+    text+='QT += core\n'
+    if type=='cli':
+        text+='CONFIG += console\n'
+    elif type=='app':
+        text+='QT += gui\n'
+        text+='greaterThan(QT_MAJOR_VERSION, 4): QT += widgets\n'    
+        text+='TEMPLATE = app\n'
+    text+='TARGET = '+name+'\n'
+    text+='SOURCES = $$PWD/src/*.cpp\n'
+    text+='INCLUDEPATH += include\n'
+    text+='INCLUDEPATH += $$PWD/../deps/include\n'
     text+='LIBRARY_PATH += $$PWD/../deps/lib\n'
     with open(name+'.pro', 'w') as f:
         f.write(text)
@@ -104,6 +111,7 @@ for d, build in dirs.items():
 os.chdir('..')
 print('All dependencies has built')
 
+os.chdir(d1)
 form_qt_config(project_name, config['type'])
 prj_module=import_module(split(codegen)[-1], '.projects')
 prj_module.make_arch(directory=d1, developers=config['team']['developers'], tabstop=config['tabstop'], snake_case=config['snake_case'], type=config['type'])
@@ -114,18 +122,18 @@ def test_build():
     ps.wait()
     output = ps.stdout.read()
     print(output.decode('utf8')+'\n')
-    if ps.exit_code!=0:
+    if ps.returncode!=0:
         os._exit(1)
     ps = subprocess.Popen(('make'), stdout=subprocess.PIPE)
     ps.wait()
     output = ps.stdout.read()
     print(output.decode('utf8')+'\n')
-    if ps.exit_code!=0:
+    if ps.returncode!=0:
         os._exit(1)
     for p in os.listdir('tests'):
         ps = subprocess.Popen(('tests/'+p, ), stdout=subprocess.PIPE)
         ps.wait()
-        if ps.exit_code!=0:
+        if ps.returncode!=0:
             print('Test '+p+' is not passed. Exit')
             os._exit(1)
 

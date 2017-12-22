@@ -28,5 +28,5 @@ def make_arch(directory, developers, tabstop, snake_case, type):
     global_funcs=funcs("int main(int argc, char**argv);")
     global_funcs[0].body=class_name+' test("Dummy");'
     ret=global_funcs[0].impl()
-    with open(join(directory, 'main.cpp'), 'w') as f:
+    with open(join(directory, 'src', 'main.cpp'), 'w') as f:
         f.write(ret)

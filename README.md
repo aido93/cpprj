@@ -13,6 +13,10 @@ dot (for diagrams in Doxygen)
 
 python-magic
 
+qt5-default
+
+qt5-qmake
+
 **Install**
 
 git clone https://github.com/aido93/cpprj
